@@ -1,0 +1,2361 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chatbot Trợ lý thông tin điều trị bằng Gamma Knife PRO</title>
+
+<style>
+body {
+    font-family: Arial;
+    background:#eef2f5;
+    margin:0;
+}
+
+/* FULL SCREEN */
+#chat {
+    width:100vw;
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+    background:white;
+}
+
+/* HEADER */
+#header {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:12px;
+
+    background:#1e88e5;
+    color:white;
+    padding:10px 15px;
+    font-size:20px;
+    font-weight:bold;
+}
+
+/* MESSAGES */
+#messages {
+    flex:1;
+    padding:15px;
+    overflow-y:auto;
+    background:#f9fbfd;
+}
+
+/* MESSAGE STYLE */
+.msg { margin:10px 0; max-width:70%; }
+.user {
+    margin-left:auto;
+    background:#e3f2fd;
+    padding:10px;
+    border-radius:10px;
+}
+.bot {
+    background:#eeeeee;
+    padding:10px;
+    border-radius:10px;
+}
+
+/* TYPING */
+#typing {
+    font-style:italic;
+    color:gray;
+    padding-left:15px;
+}
+
+/* QUICK BUTTONS */
+.quick {
+    padding:6px 10px;
+    margin:5px;
+    background:#e3f2fd;
+    border-radius:20px;
+    cursor:pointer;
+    display:inline-block;
+}
+
+/* INPUT BOX FIX BOTTOM */
+#inputBox {
+    display:flex;
+    padding:10px;
+    border-top:1px solid #ccc;
+    background:white;
+}
+
+#input {
+    flex:1;
+    padding:10px;
+    border-radius:8px;
+    border:1px solid #ccc;
+}
+
+button {
+    padding:10px;
+    margin-left:5px;
+    border:none;
+    background:#1e88e5;
+    color:white;
+    border-radius:8px;
+    cursor:pointer;
+}
+
+.logo {
+    width:150px;
+    height:150px;
+    object-fit:contain;
+}
+</style>
+
+</head>
+
+<body>
+
+<div id="chat">
+<div id="header">
+	<img src="images/gamma-knife.jpg" class="logo"> 
+	Trợ lý Xạ Phẫu Gamma Knife - Ngoại Thần kinh, Bệnh viện Chợ Rẫy
+</div>
+
+<div id="messages"></div>
+<div id="typing"></div>
+
+<div style="padding:10px;">
+  <span class="quick" onclick="quickAsk('gamma knife là gì')">Gamma Knife</span>
+</div>
+
+<div id="inputBox">
+<input id="input" placeholder="Hỏi về Gamma Knife..." />
+<button onclick="send()">Gửi</button>
+<button onclick="resetChat()">Reset</button>
+</div>
+</div>
+
+<script>
+
+// =======================
+// 🔧 NORMALIZE TIẾNG VIỆT
+// =======================
+function normalize(text){
+    return text.toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+}
+
+// =======================
+// 🚨 TRIAGE NGUY HIỂM
+// =======================
+const danger = ["co giat","liet","non","dau dau du doi"];
+
+
+// =======================
+// 📚 FAQ THÔNG MINH
+// =======================
+const faq = [
+
+// HIỂU CHUNG (1–30)
+
+{
+q:["gamma knife la gi","dinh nghia gamma knife","gamma knife hoat dong nhu the nao","phuong phap gamma knife la gi","gamma knife dung de lam gi"],
+a:"Gamma Knife là phương pháp xạ phẫu dùng tia bức xạ hội tụ chính xác để điều trị bệnh trong não mà không cần mổ."
+},
+
+{
+q:["gamma knife co phai mo khong","gamma knife co phai phau thuat khong","co mo nao khi dung gamma knife khong","co mo so khong","day co phai mo nao khong"],
+a:"Không.Gamma knife là phương pháp dùng tia xạ để điều trị,không mở sọ."
+},
+
+{
+q:["tai sao goi la dao gamma","vi sao ten la gamma knife","ten gamma knife co y nghia gi","tai sao lai goi la dao gamma","gamma knife co phai la dao that khong","ten dao gamma xuat phat tu dau","vi sao dung ten knife cho phuong phap nay"],
+a:"Có tên như vậy vì chùm tia bức xạ Gamma được hội tụ chính xác giống như lưỡi dao cắt khối u, dù thực tế không có dao và không cần mổ."
+},
+
+{
+q:["gamma knife dung tia gi","tia nao duoc su dung trong gamma knife","gamma knife su dung loai tia nao","co phai dung tia gamma khong","nguon buc xa cua gamma knife la gi","gamma knife phat ra tia gi","co phai dung co60 khong"],
+a:"Sử dụng tia Gamma phát ra từ nhiều nguồn phóng xạ Co-60 được hội tụ chính xác vào vùng điều trị."
+},
+
+{
+q:["gamma knife co chay mau khong","dieu tri gamma knife co gay chay mau khong","lam gamma knife co bi chay mau khong","co bi mat mau khi dieu tri khong","phuong phap nay co chay mau khong","co vet mo nen co chay mau khong","xạ phau gamma knife co gay chay mau khong"],
+a:"Phương pháp Gamma Knife không gây chảy máu vì không có vết mổ."
+},
+
+{
+q:["gamma knife co can gay me khong","dieu tri gamma knife co phai gay me khong","lam gamma knife co gay me khong","nguoi lon lam gamma knife co can gay me khong","co phai ngu khi dieu tri khong","co bi me khi chieu tia khong","co can gay me toan than khong"],
+a:"Phương pháp Gamma Knife thường không cần gây mê ở người lớn."
+},
+
+{
+q:["gamma knife co dau khong","dieu tri gamma knife co dau khong","lam gamma knife co bi dau khong","luc chieu tia co dau khong","co dau khi gan khung khong","co dau trong qua trinh dieu tri khong","co dau nhieu khong khi lam gamma knife"],
+a:"Trong quá trình diều trị hầu như không đau, chỉ hơi đau và khó chịu khi cố định đầu bằng khung định vị."
+},
+
+{
+q:["gamma knife co phai ky thuat moi khong","day co phai cong nghe moi khong","gamma knife da duoc dung lau chua","phuong phap nay moi hay cu","gamma knife xuat hien tu bao gio","ky thuat nay co moi khong","gamma knife co pho bien lau chua"],
+a:"Đây là kỹ thuật đã được sử dụng hơn 50 năm tại nhiều trung tâm Gamma Knife trên thế giới."
+},
+
+{
+q:["gamma knife khac mo nao nhu the nao","so sanh gamma knife voi mo nao","lam gamma knife co gi khac mo nao","khong mo nao thi khac gi","uu diem so voi mo nao la gi","tai sao khong can mo nao","gamma knife co thay the mo nao khong"],
+a:"Không cần mở sọ, ít biến chứng hơn và hồi phục nhanh hơn."
+},
+
+{
+q:["gamma knife khac xa tri thuong nhu the nao","so sanh gamma knife voi xa tri thuong","gamma knife co gi khac xa tri","tai sao chi can 1 lan dieu tri","xa phau gamma knife khac gi xa tri thuong","gamma knife co chinh xac hon khong","uu diem cua gamma knife so voi xa tri la gi"
+],
+a:"Phương pháp Gamma Knife có độ chính xác cao hơn và thường chỉ cần 1 lần điều trị."
+},
+
+{
+q:["gamma knife co phai xa tri khong","day co phai la xa tri khong","gamma knife la xa tri hay phau thuat","xa phau co phai xa tri khong","gamma knife thuoc loai dieu tri nao","phuong phap nay co phai dung tia xa khong","gamma knife co dung buc xa khong"],
+a:"Là một dạng xạ trị có độ chính xác rất cao (xạ phẫu)."
+},
+
+{
+q:["gamma knife co anh huong toan than khong","tia co lan ra toan bo co the khong","buc xa co anh huong ca co the khong","co gay tac dong den co quan khac khong","tia co chi tap trung vao u khong","co anh huong den vung nao khac khong","xa tri nay co lan ra ngoai khong"],
+a:"Không, tia tập trung vào vùng điều trị bên trong não."
+},
+
+{
+q:["gamma knife co gay ung thu khong","dieu tri gamma knife co nguy co ung thu khong","tia xa co gay ung thu khong","xa phau co nguy hiem gay ung thu khong","buc xa gamma knife co hai khong","co tang nguy co ung thu sau dieu tri khong","lam gamma knife co nguy hiem khong"],
+a:"Nguy cơ rất thấp, lợi ích điều trị thường lớn hơn nguy cơ."
+},
+
+{
+q:["ai phat minh ra gamma knife","gamma knife do ai sang tao","nguon goc cua gamma knife la gi","ai la nguoi phat trien gamma knife","phuong phap gamma knife xuat phat tu dau","lich su ra doi gamma knife nhu the nao"],
+a:"Gamma Knife do phẫu thuật viên thần kinh người Thụy Điển Lars Leksell phát minh và phát triển."
+},
+
+{
+q:["gamma knife dieu tri may lan","lam gamma knife can bao nhieu lan","co phai chi can 1 lan khong","mot lan dieu tri co du khong","co can dieu tri nhieu dot khong","dieu tri gamma knife co lap lai khong","thong thuong lam may lan la du"],
+a:"Điều trị Gamma Knife thường chỉ cần 1 lần."
+},
+
+{
+q:["gamma knife co can nam vien khong","dieu tri gamma knife co phai nhap vien khong","lam gamma knife co phai o lai benh vien khong","co phai nam vien lau khong","co the ve trong ngay khong","sau dieu tri co phai o lai dem khong","thoi gian nam vien bao lau"],
+a:"Thường bệnh nhân không cần nằm viện, có thể xuất viện trong ngày."
+},
+
+{
+q:["gamma knife mat bao lau de hoan thanh","dieu tri gamma knife keo dai bao lau","lam gamma knife bao lau xong","toan bo quy trinh mat bao lau","mot ca dieu tri gamma knife trong bao lau","thoi gian dieu tri la bao nhieu","lam trong 1 ngay co xong khong"],
+a:"Điều trị Gamma Knife hoàn thành trong 1 ngày."
+},
+
+{
+q:["gamma knife co de lai seo khong","sau dieu tri co seo khong","lam gamma knife co bi seo khong","co vet mo nen co seo khong","co de lai dau vet tren dau khong","co bi seo sau khi dieu tri khong","phuong phap nay co de lai seo khong"],
+a:"Không để lại sẹo vì không có vết mổ."
+},
+
+{
+q:["gamma knife co anh huong tri nho khong","dieu tri gamma knife co lam giam tri nho khong","lam gamma knife co bi mat tri nho khong","co bi suy giam tri nho sau dieu tri khong","co anh huong den nao bo va tri nho khong","tri nho co bi anh huong sau khi lam khong","co bi quen sau khi dieu tri khong"],
+a:"Hiếm gặp và phụ thuộc vào vị trí điều trị trong não."
+},
+
+{
+q:["gamma knife co anh huong tinh cach khong","dieu tri gamma knife co lam thay doi tinh cach khong","lam gamma knife co bi thay doi tinh cach khong","co bi bien doi tinh cach sau dieu tri khong","co anh huong den hanh vi va cam xuc khong","co lam thay doi con nguoi sau khi dieu tri khong","co bi anh huong tam ly sau khi lam khong"],
+a:"Rất hiếm, thường không xảy ra vì tia được tập trung chính xác vào vùng điều trị, tuy nhiên vẫn phụ thuộc vào vị trí trong não."
+},
+
+{
+q:["gamma knife co can tai kham khong","sau dieu tri co can theo doi lau dai khong","co can tai kham dinh ky khong","sau khi lam gamma knife co phai di kham lai khong","theo doi sau dieu tri nhu the nao","bao lau can tai kham mot lan","co bat buoc phai tai kham khong"],
+a:"Có, cần tái khám định kỳ theo lịch hẹn để đánh giá hiệu quả và theo dõi diễn tiến bệnh."
+},
+
+{
+q:["gamma knife co hieu qua khong","ty le thanh cong cua gamma knife la bao nhieu","dieu tri gamma knife co tot khong","ket qua dieu tri co cao khong","co de khoi benh khong","hieu qua cua gamma knife nhu the nao","phuong phap nay co dang tin cay khong"],
+a:"Phụ thuộc vào loại bệnh và vị trí tổn thương, nhưng thường có hiệu quả cao khi được chỉ định đúng."
+},
+
+{
+q:["tai phat","gamma knife co tai phat khong","dieu tri gamma knife co bi lai khong","benh co quay lai sau dieu tri khong","sau khi lam gamma knife co tai phat khong","co nguy co tai phat sau dieu tri khong","u co moc lai khong","dieu tri xong co bi lai khong"],
+a:"Có thể tái phát tùy loại bệnh và đặc điểm tổn thương, vì vậy cần theo dõi định kỳ sau điều trị."
+},
+
+{
+q:["gamma knife co phu hop voi moi nguoi khong","ai cung co the lam gamma knife khong","phuong phap nay co ap dung cho tat ca khong","co phai ai cung dieu tri duoc khong","co dieu kien gi de lam gamma knife","truong hop nao moi duoc chi dinh","co can danh gia truoc khi lam khong"],
+a:"Không phải ai cũng phù hợp, cần bác sĩ đánh giá dựa trên loại bệnh, kích thước và vị trí tổn thương."
+},
+
+{
+q:["do tuoi","gamma knife co gioi han do tuoi khong","tre em co dieu tri duoc khong","nguoi gia","nguoi gia co phu hop khong","co phai chi danh cho nguoi lon khong"],
+a:"Không có giới hạn tuổi tuyệt đối. Gamma Knife có thể áp dụng cho nhiều nhóm tuổi, từ trẻ em đến người lớn tuổi."
+},
+
+
+// PHẦN 2 — BỆNH LÝ (31–60)
+
+{
+q:["dieu tri u nao nao","gamma knife dieu tri u nao","co phai tat ca u nao deu dieu tri duoc khong","u nao nao co the dung gamma knife"],
+a:"Gamma Knife có thể điều trị nhiều loại u não như u lành tính, u ác tính và u di căn não, tùy theo chỉ định và đánh giá của bác sĩ chuyên khoa."
+},
+
+
+{
+q:["co dieu tri u lanh khong","gamma knife co dung cho u lanh khong","u lanh co can dieu tri khong","u lanh nao co the dung gamma knife"],
+a:"Có. Gamma Knife rất hiệu quả trong điều trị nhiều u lành tính, đặc biệt khi u gây triệu chứng hoặc có nguy cơ phát triển thêm."
+},
+
+{
+q:["co dieu tri u ac khong","gamma knife co dung cho u ac khong","u ac tinh co dieu tri duoc khong","co dung cho ung thu nao trong nao khong"],
+a:"Có. Gamma Knife thường được sử dụng trong điều trị u ác tính trong não, đặc biệt là di căn não từ các ung thư khác."
+},
+
+{
+q:["co dieu tri di can nao khong","di can nao co dung gamma knife khong","u di can nao dieu tri the nao","gamma knife co hieu qua voi di can nao khong"],
+a:"Có. Điều trị di căn não là một trong những chỉ định phổ biến và hiệu quả của Gamma Knife."
+},
+
+{
+q:["di dang","di dang mach mau","di dang mach mau co dieu tri duoc khong","avm co dieu tri bang gamma knife khong","roi loan mach mau nao co dung duoc khong","gamma knife co chua duoc avm khong"],
+a:"Có thể điều trị hiệu quả các dị dạng mạch máu não (AVM) bằng Gamma Knife trong nhiều trường hợp."
+},
+
+{
+q:["dau day v","dau day v co dung duoc khong","gamma knife co tri dau day sinh ba khong","trigeminal neuralgia dieu tri the nao","dau mat","co hieu qua voi dau mat khong"],
+a:"Có. Gamma Knife là phương pháp điều trị hiệu quả cao cho đau dây thần kinh số V (đau dây sinh ba) trong nhiều trường hợp."
+},
+
+{
+q:["parkinson co dieu tri duoc khong","gamma knife co dung cho parkinson khong","parkinson co phau thuat xam lan khong","co ap dung xạ phau cho parkinson khong"],
+a:"Một số trường hợp Parkinson có thể được xem xét điều trị bằng Gamma Knife hoặc các kỹ thuật xạ phẫu chức năng, tùy chỉ định chuyên khoa."
+},
+
+{
+q:["u tuyen yen co phu hop khong","gamma knife co dung cho u tuy yen khong","pituitary adenoma dieu tri the nao","u tuy yen co can mo khong"],
+a:"Có thể. U tuyến yên có thể điều trị bằng Gamma Knife trong một số trường hợp tùy kích thước, vị trí và mức độ xâm lấn."
+},
+
+{
+q:["u day viii co dieu tri duoc khong","vestibular schwannoma gamma knife","u than kinh so 8 co dung duoc khong","co phai mo u day viii khong"],
+a:"Có. U dây VIII (schwannoma tiền đình) là một trong những chỉ định thường gặp của Gamma Knife."
+},
+
+{
+q:["kich thuoc u toi da","u bao nhieu cm thi dieu tri duoc","gioi han kich thuoc u la bao nhieu","u lon co dung gamma knife khong"],
+a:"Thông thường Gamma Knife phù hợp với các khối u nhỏ, khoảng dưới 3–4 cm tùy vị trí và tính chất tổn thương."
+},
+
+{
+q:["u lon co dieu tri duoc khong","u kich thuoc lon co dung gamma knife khong","neu u qua lon thi sao","co phai khong dung duoc khong"],
+a:"U lớn vẫn có thể điều trị trong một số trường hợp, nhưng thường cần phối hợp thêm các phương pháp khác như phẫu thuật hoặc xạ trị phân liều."
+},
+
+{
+q:["u nho co can dieu tri khong","u nho co nguy hiem khong","co can dieu tri neu u con nho khong","co the theo doi khong"],
+a:"Tùy trường hợp. U nhỏ có thể được theo dõi nếu không tiến triển hoặc không gây triệu chứng."
+},
+
+{
+q:["co thay the mo khong","gamma knife co thay the phau thuat khong","co phai luc nao cung mo khong","co the tranh mo nao khong"],
+a:"Trong nhiều trường hợp, Gamma Knife có thể thay thế phẫu thuật mở sọ, tùy vào vị trí và loại tổn thương."
+},
+
+{
+q:["co can sinh thiet khong","gamma knife co can lay mo xet nghiem khong","co phai xac dinh bang mo khong","chan doan truoc dieu tri the nao"],
+a:"Không phải lúc nào cũng cần sinh thiết, tùy vào hình ảnh học và đánh giá lâm sàng của bác sĩ."
+},
+
+{
+q:["co can xac dinh loai u khong","chan doan loai u quan trong khong","co phai biet ro u truoc dieu tri khong","gamma knife can chan doan chinh xac khong"],
+a:"Rất quan trọng. Việc xác định loại u giúp bác sĩ lựa chọn chỉ định điều trị phù hợp và an toàn."
+},
+
+{
+q:["u lanh co can dieu tri khong","u lanh khi nao can dieu tri","co phai u lanh luon bo qua khong","khi nao u lanh nguy hiem"],
+a:"U lành có thể cần điều trị nếu gây triệu chứng, chèn ép cấu trúc quan trọng hoặc có dấu hiệu phát triển."
+},
+
+{
+q:["co the tri hoan khong","co the theo doi truoc khi dieu tri khong","khi nao chua can dieu tri","co the doi u on dinh khong"],
+a:"Một số trường hợp có thể trì hoãn điều trị và theo dõi định kỳ theo chỉ định bác sĩ."
+},
+
+{
+q:["dieu tri som co loi gi","tai sao phai dieu tri som","neu dieu tri som thi sao","co nen dieu tri som khong"],
+a:"Điều trị sớm giúp giảm nguy cơ biến chứng, kiểm soát bệnh tốt hơn và cải thiện tiên lượng lâu dài."
+},
+
+{
+q:["khong dieu tri thi sao","neu khong dieu tri gamma knife thi sao","u khong dieu tri co nguy hiem khong","benh co tien trien khong"],
+a:"Nếu không điều trị, bệnh có thể tiến triển, gây tăng triệu chứng hoặc biến chứng tùy loại tổn thương."
+},
+
+{
+q:["co cai thien trieu chung khong","gamma knife co giam trieu chung khong","co het trieu chung khong","benh co do hon khong"],
+a:"Có thể cải thiện triệu chứng rõ rệt tùy loại bệnh và mức độ tổn thương."
+},
+
+{
+q:["co lam u bien mat khong","gamma knife co lam mat u khong","u co tan hoan toan khong","ket qua dieu tri la gi"],
+a:"Thường không làm u biến mất ngay, mà giúp u nhỏ lại hoặc ngừng phát triển theo thời gian."
+},
+
+{
+q:["co can hoa tri khong","gamma knife co can hoa tri kem khong","co phai dieu tri ket hop khong","hoa tri co bat buoc khong"],
+a:"Tùy loại bệnh, một số trường hợp có thể cần phối hợp thêm hóa trị."
+},
+
+{
+q:["co can xa tri them khong","gamma knife co can xa tri bo sung khong","co phai chi dung 1 phuong phap khong","co phoi hop xa tri khong"],
+a:"Có thể cần xạ trị bổ sung tùy loại u và mức độ lan rộng của bệnh."
+},
+
+{
+q:["co can mo truoc khong","co phai mo truoc khi gamma knife khong","phau thuat co bat buoc khong","khi nao can mo"],
+a:"Tùy trường hợp, một số bệnh nhân cần phẫu thuật trước khi điều trị Gamma Knife."
+},
+
+{
+q:["sau mo co can gamma knife khong","gamma knife sau phau thuat","co can dieu tri bo sung sau mo khong","phan con lai sau mo thi sao"],
+a:"Có thể cần Gamma Knife sau phẫu thuật để xử lý phần tổn thương còn lại."
+},
+
+{
+q:["co dieu tri tai phat khong","gamma knife co dung khi tai phat khong","neu benh quay lai thi sao","co dieu tri lai duoc khong"],
+a:"Có thể. Gamma Knife vẫn có thể được chỉ định trong trường hợp tái phát tùy tình trạng bệnh."
+},
+
+{
+q:["co dieu tri nhieu u khong","co the dieu tri nhieu ton thuong khong","mot lan dieu tri nhieu u duoc khong","gamma knife co dieu tri da o khong"],
+a:"Có thể điều trị nhiều tổn thương trong cùng một lần điều trị nếu phù hợp."
+},
+
+{
+q:["co dieu tri u sau khong","u o sau nao co dung duoc khong","gamma knife co vao sau nao khong","u vi tri sau co dieu tri duoc khong"],
+a:"Rất phù hợp cho các u nằm sâu trong não do khả năng tập trung chính xác cao."
+},
+
+{
+q:["co dieu tri gan than nao khong","u gan than nao co nguy hiem khong","gamma knife co an toan gan than nao khong","vi tri nguy hiem co dieu tri duoc khong"],
+a:"Có thể điều trị, nhưng cần đánh giá rất cẩn thận do đây là vùng chức năng quan trọng."
+},
+
+{
+q:["co anh huong mo lanh khong","gamma knife co gay ton thuong mo lanh khong","tia co lan sang mo lanh khong","co nguy co hu hai mo binh thuong khong"],
+a:"Rất ít ảnh hưởng đến mô lành do độ chính xác cao, tia được tập trung chủ yếu vào vùng điều trị."
+},
+
+
+// PHẦN 3 — TRƯỚC ĐIỀU TRỊ (61–100)
+
+{
+q:["chuan bi","can chuan bi gi","truoc dieu tri chuan bi","di lam gamma knife can gi","mang gi khi dieu tri","di benh vien can mang gi","ho so can gi"],
+a:"Bệnh nhân cần mang hồ sơ bệnh án, kết quả MRI/CT và giấy tờ liên quan để bác sĩ đánh giá và lập kế hoạch điều trị."
+},
+
+{
+q:["nhin an","bo an","co can nhin an","truoc lam co duoc an khong","co phai nhin an khong","an truoc dieu tri","nhin bao lau","nhin may tieng","truoc dieu tri nhin bao lau","phai bo an bao lau","nhin an may gio","bao lau truoc khi lam khong an"],
+a:"Thường cần không cần nhịn ăn trước điều trị, chỉ nhịn ăn khi có chỉ định gây mê."
+},
+
+{
+q:["ngung thuoc","dung thuoc","co can dung thuoc","thuoc dang uong co dung khong","co phai ngung thuoc khong","co duoc uong thuoc truoc khong"],
+a:"Chỉ ngưng hoặc điều chỉnh thuốc khi có chỉ định của bác sĩ, không tự ý ngưng."
+},
+
+{
+q:["thuoc huyet ap","tang huyet ap","co dung thuoc huyet ap","thuoc tim mach co dung khong","co phai ngung thuoc ap khong","co duoc uong thuoc ap khong"],
+a:"Thông thường vẫn tiếp tục dùng thuốc huyết áp theo chỉ định bác sĩ."
+},
+
+{
+q:["tieu duong","thuoc tieu duong","co dung thuoc tieu duong","benh tieu duong phai lam sao","co can dieu chinh thuoc duong","duong huyet truoc dieu tri"],
+a:"Cần trao đổi với bác sĩ để được hướng dẫn điều chỉnh thuốc phù hợp."
+},
+
+{
+q:["chong dong","loang mau","thuoc loang mau","co can ngung thuoc chong dong","dang uong aspirin co dung khong","co phai dung thuoc loang mau"],
+a:"Có thể cần điều chỉnh hoặc tạm ngưng thuốc chống đông theo chỉ định bác sĩ."
+},
+
+{
+q:["xet nghiem","xet nghiem mau","co can xet nghiem","co phai lay mau khong","truoc dieu tri co xet nghiem khong","lam xet nghiem gi"],
+a:"Có thể cần làm một số xét nghiệm trước điều trị theo chỉ định bác sĩ."
+},
+
+{
+q:["mri","chup mri","co can mri","mri truoc dieu tri","co bat buoc chup mri","mri de lam gi"],
+a:"MRI rất quan trọng để xác định chính xác vị trí tổn thương và lập kế hoạch điều trị."
+},
+
+{
+q:["ct","chup ct","co can ct","ct truoc dieu tri","co phai chup ct khong","ct co bat buoc khong"],
+a:"Có thể cần chụp CT bổ sung trong một số trường hợp."
+},
+
+{
+q:["phim cu","ket qua cu","mang phim cu","co can mang phim khong","co nen mang ket qua cu","mang mri cu di khong"],
+a:"Nên mang tất cả phim và kết quả chụp trước đây để bác sĩ đánh giá."
+},
+
+{
+q:["nhap vien","vao vien","co can nhap vien","co phai o vien truoc","co can nam vien truoc khong","truoc dieu tri co vao vien khong"],
+a:"Tùy quy trình bệnh viện, có thể cần hoặc không cần nhập viện trước."
+},
+
+{
+q:["nguoi nha","di cung","co can nguoi nha","co nen di cung nguoi than","co can nguoi di cung","mot minh di duoc khong"],
+a:"Phải có người nhà đi cùng để hỗ trợ trước và sau điều trị."
+},
+
+{
+q:["ky cam ket","ky giay","co phai ky giay","truoc dieu tri co ky giay khong","co phai ky dong y","co can ky truoc khong"],
+a:"Có. Bệnh nhân cần ký cam kết điều trị sau khi được tư vấn."
+},
+
+{
+q:[
+"co can thao trang suc truoc dieu tri",
+"truoc khi lam co can bo trang suc",
+"co duoc deo trang suc khi dieu tri",
+"co can thao do kim loai tren nguoi",
+"khi dieu tri co duoc deo vang khong",
+"co can bo trang suc khi chup MRI"
+],
+a:"Trước khi điều trị, bệnh nhân cần tháo bỏ toàn bộ trang sức và các vật kim loại trên cơ thể để đảm bảo an toàn và tránh ảnh hưởng đến quá trình chụp hình cũng như chiếu tia."
+},
+
+{
+q:["cao toc","cat toc","co phai cao toc","lam gamma knife co cao toc khong","co can cat toc khong","co mat toc khong"],
+a:"Thông thường không cần cạo tóc khi điều trị Gamma Knife."
+},
+
+{
+q:["goi dau","ve sinh dau","co can goi dau","truoc dieu tri co can goi dau","co can ve sinh dau","co can lam sach toc khong"],
+a:"Nên gội đầu sạch sẽ trước khi đến điều trị."
+},
+
+{
+q:["tam ly","lo lang","co can chuan bi tam ly","co can lo lang khong","co can giam lo lang","co can tu van tam ly"],
+a:"Nên chuẩn bị tâm lý thoải mái, hiểu rõ quy trình để giảm lo lắng."
+},
+
+{
+q:[
+"ngu","ngu du","co can ngu du","truoc dieu tri co can ngu du","ngu truoc ngay lam","co can nghi ngo"],
+a:"Nên ngủ đủ giấc trước ngày điều trị để đảm bảo sức khỏe."
+},
+
+{
+q:["ca phe","uống ca phe","co can kieng ca phe","truoc dieu tri co duoc uong ca phe","co duoc uong cafe khong","kieng cafe khong"],
+a:"Nên hạn chế hoặc tránh cà phê trước ngày điều trị."
+},
+
+{
+q:["ruou","bia","co can kieng ruou","truoc dieu tri co duoc uong ruou","co duoc uong bia khong","kieng bia ruou"],
+a:"Nên tránh rượu bia trước điều trị để đảm bảo an toàn."
+},
+
+{
+q:["nuoc","uong nuoc","co duoc uong nuoc","co can nhin nuoc","truoc dieu tri co uong nuoc duoc khong","co phai kieng nuoc"],
+a:"Tùy chỉ định, đặc biệt nếu gây mê, bác sĩ sẽ hướng dẫn cụ thể."
+},
+
+{
+q:["mac do","quan ao","di dieu tri mac gi","co can mac do dac biet","nen mac gi khi di lam","mac do thoai mai"],
+a:"Nên mặc quần áo thoải mái, rộng rãi và dễ thay."
+},
+
+{
+q:["bao hiem","bhyt","co can bao hiem","co nen mang bao hiem","bao hiem co duoc dung khong","co duoc thanh toan khong"],
+a:"Nên mang theo bảo hiểm y tế nếu có để được hỗ trợ chi phí."
+},
+
+{
+q:["giay to","cmnd","cccd","can mang giay to gi","di benh vien can giay gi","ho so can mang gi","co can giay tuy than"],
+a:"Cần mang CMND/CCCD và hồ sơ y tế liên quan."
+},
+
+{
+q:["dien tim","ecg","co can do dien tim","truoc dieu tri co can lam ecg","co phai kiem tra tim","tim mach truoc dieu tri"],
+a:"Có thể cần đo điện tim trong một số trường hợp."
+},
+
+{
+q:["gay me","kham tien me","co can kham tien me","truoc gay me co kham khong","co phai kham gay me","co can danh gia gay me"],
+a:"Nếu có gây mê, bệnh nhân sẽ được khám tiền mê trước."
+},
+
+{
+q:["di ung","di ung thuoc","co can bao di ung","co phai noi di ung","di ung co nguy hiem khong","co can thong bao di ung"],
+a:"Rất quan trọng phải thông báo tiền sử dị ứng với bác sĩ."
+},
+
+{
+q:["benh nen","tien su benh","co can bao benh nen","co phai khai benh nen","benh nen co anh huong khong","co can thong bao benh"],
+a:"Bắt buộc thông báo bệnh nền để đảm bảo an toàn."
+},
+
+{
+q:["mo nao","phau thuat nao","co can bao mo nao","da mo nao co can noi","tien su mo nao","co anh huong dieu tri khong"],
+a:"Cần thông báo tiền sử mổ não cho bác sĩ."
+},
+
+{
+q:["den som","toi som","co can den som","nen den truoc bao lau","den truoc gio hen","co can di som khong"],
+a:"Nên đến sớm theo lịch hẹn để chuẩn bị thủ tục."
+},
+
+{
+q:["o lai dem","nam vien","co can o lai dem","co phai nam vien qua dem","co can o vien sau dieu tri","co duoc ve ngay khong"],
+a:"Đa số không cần ở lại qua đêm, có thể về trong ngày."
+},
+
+{
+q:["chi phi","gia bao nhieu","dieu tri bao nhieu tien","co dat khong","bao nhieu tien lam gamma knife","co duoc bao hiem khong"],
+a:"Chi phí tùy loại bảo hiểm y tế."
+},
+
+
+// PHẦN 4 — TRONG ĐIỀU TRỊ (101–170)
+
+{
+q:["quy trinh dieu tri gamma knife","quy trinh gamma knife","quy trinh dieu tri gamma knife gom nhung buoc nao","lam gamma knife bao gom nhung buoc gi cu the","cac buoc trong qua trinh dieu tri gamma knife","quy trinh dieu tri gamma knife dien ra nhu the nao","gamma knife duoc thuc hien qua nhung giai doan nao","trinh tu cac buoc khi dieu tri gamma knife"],
+a:"Quy trình điều trị Gamma Knife thường gồm các bước: gắn khung cố định đầu, chụp hình ảnh (MRI/CT), lập kế hoạch xạ phẫu và tiến hành chiếu tia điều trị."
+},
+
+{
+q:["gan khung co dinh la gi","khung gamma knife la gi","tai sao phai gan khung dau","khung co dinh dau dung de lam gi","co can gan khung khong","khung co dinh co tac dung gi"],
+a:"Khung cố định là thiết bị giúp giữ đầu bệnh nhân ổn định tuyệt đối, đảm bảo tia bức xạ được chiếu chính xác vào vùng tổn thương."
+},
+
+{
+q:["gan khung co dau khong","co dau khi gan khung khong","gan khung gamma knife co dau khong","gan khung dau co dau nhieu khong","cam giac khi gan khung nhu the nao","gan khung co kho chiu khong"],
+a:"Bạn có thể cảm thấy hơi đau nhẹ khi tiêm thuốc tê lúc gắn khung, sau đó hầu như không còn cảm giác đau trong quá trình điều trị."
+},
+
+{
+q:["co gay te khong khi lam gamma knife","co can gay te khong","lam gamma knife co gay te khong","co tiem thuoc te khong","gay te tai cho hay toan than","co bi dau khi lam khong"],
+a:"Trong quá trình gắn khung, bác sĩ sẽ gây tê tại chỗ để giúp bạn cảm thấy thoải mái và giảm khó chịu."
+},
+
+{
+q:["gan khung mat bao lau","thoi gian gan khung dau bao nhieu phut","gan khung gamma knife bao lau","co mat nhieu thoi gian khong","gan khung co nhanh khong","thoi gian co dinh dau bao lau"],
+a:"Việc gắn khung thường diễn ra nhanh, khoảng 10–20 phút, và được thực hiện bởi đội ngũ chuyên môn."
+},
+
+{
+q:["sau khi gan khung co kho chiu khong","gan khung xong co cam giac gi","co bi nang dau sau khi gan khung","co cam giac cang dau khong","gan khung xong co dau khong","cam giac sau gan khung"],
+a:"Sau khi gắn khung, bạn có thể cảm thấy hơi căng hoặc nặng đầu nhẹ, đây là phản ứng bình thường và sẽ giảm dần."
+},
+
+{
+q:["co chup MRI khi lam gamma knife khong","co bat buoc chup MRI khong","MRI co can thiet khong","tai sao phai chup MRI","co chup MRI truoc dieu tri khong","MRI de lam gi"],
+a:"Thông thường sẽ cần chụp MRI để xác định chính xác vị trí tổn thương và phục vụ cho việc lập kế hoạch điều trị."
+},
+
+{
+q:["co chup CT khong khi lam gamma knife","co can chup CT bo sung khong","CT co bat buoc khong","tai sao can chup CT","co chup ca MRI va CT khong","CT dung de lam gi"],
+a:"Trong một số trường hợp, bác sĩ có thể yêu cầu chụp thêm CT để hỗ trợ lập kế hoạch điều trị chính xác hơn."
+},
+
+{
+q:["chup hinh mat bao lau","MRI CT mat bao lau","thoi gian chup phim bao lau","chup hinh co lau khong","chup MRI co mat nhieu thoi gian khong","tong thoi gian chup hinh"],
+a:"Thời gian chụp hình ảnh thường kéo dài khoảng 15–30 phút, tùy theo loại kỹ thuật được sử dụng."
+},
+
+{
+q:["lap ke hoach dieu tri mat bao lau","thoi gian lap plan gamma knife","bac si lap ke hoach bao lau","co phai cho lau khong","lap ke hoach co phuc tap khong","thoi gian tinh toan lieu"],
+a:"Quá trình lập kế hoạch điều trị thường mất khoảng 1–2 giờ để đảm bảo độ chính xác tối ưu."
+},
+
+{
+q:["trong luc cho lam gi","doi den luot thi lam gi","co duoc nghi ngoi khong","co phong cho khong","co duoc nam nghi khong","thoi gian cho lam gi"],
+a:"Trong thời gian chờ, bạn có thể nghỉ ngơi thư giãn tại phòng chờ và sẽ được nhân viên hỗ trợ khi đến lượt."
+},
+
+{
+q:["co can nam yen khong","co duoc cu dong khong","co duoc xoay dau khong","tai sao phai nam yen","co bat buoc nam bat dong khong","co the di chuyen khong"],
+a:"Bạn cần nằm yên để đảm bảo tia xạ được chiếu chính xác vào vị trí cần điều trị."
+},
+
+{
+q:["khi chieu tia co cam giac gi","co cam thay gi khi chieu tia","co dau khi chieu tia khong","co biet dang chieu tia khong","cam giac luc dieu tri","co thay nong khong"],
+a:"Trong quá trình chiếu tia, bạn hầu như không cảm nhận được gì, đây là phương pháp rất nhẹ nhàng."
+},
+
+{
+q:["may co tieng gi khong","co nghe tieng may khong","may gamma knife co on khong","tieng may co lon khong","co bi on khong","co am thanh khi dieu tri"],
+a:"Máy có thể phát ra tiếng nhẹ khi hoạt động, đây là hiện tượng hoàn toàn bình thường."
+},
+
+{
+q:["co nong khong khi chieu tia","co cam thay nong khong","tia co lam nong dau khong","co bi nong khi dieu tri khong","co cam giac nhiet khong","co nong ran khong"],
+a:"Bạn sẽ không cảm thấy nóng trong quá trình điều trị, vì tia xạ không gây cảm giác nhiệt."
+},
+
+{
+q:["co dau khong khi chieu tia","co bi dau luc dieu tri khong","gamma knife co gay dau khong","co cam giac dau khong","co dau dau khong khi lam","co can thuoc giam dau khong"],
+a:"Quá trình chiếu tia hoàn toàn không gây đau, bạn có thể yên tâm trong suốt thời gian điều trị."
+},
+
+{
+q:["co chong mat khong","co bi quay dau khong","co bi choang vang khong","co cam giac mat thang bang khong","co hay bi chong mat khong","trieu chung chong mat"],
+a:"Chóng mặt là hiếm gặp, nếu có thường nhẹ và thoáng qua."
+},
+
+{
+q:["co buon non khong","co bi non khong","co cam giac muon non khong","co bi kho chiu da day khong","co non sau dieu tri khong","co can thuoc chong non khong"],
+a:"Buồn nôn là ít gặp, nếu xuất hiện sẽ được bác sĩ hỗ trợ điều trị kịp thời."
+},
+
+{
+q:["co duoc noi chuyen khong","co duoc giao tiep khong","co duoc noi trong luc chieu tia khong","co duoc tra loi bac si khong","co duoc noi chuyen voi ky thuat vien khong","co bi han che giao tiep khong"],
+a:"Trong lúc chiếu tia bạn cần giữ yên và không nói chuyện để đảm bảo độ chính xác."
+},
+
+{
+q:["co duoc ngu trong qua trinh dieu tri khong","trong luc chieu tia co the ngu duoc khong","khi nam trong may co duoc ngu khong","co duoc nham mat nghi khi dieu tri khong","trong qua trinh gamma knife co ngu duoc khong","co the thu gian va ngu nhe khi dieu tri khong"],
+a:"Trong quá trình điều trị, bệnh nhân có thể nhắm mắt nghỉ ngơi hoặc ngủ nhẹ. Bạn không cần phải giữ tỉnh táo hoàn toàn, miễn là giữ đầu cố định theo hướng dẫn của nhân viên y tế."
+},
+
+{
+q:["co nguoi theo doi khong","ai theo doi benh nhan","co bac si theo doi khong","co ky thuat vien giam sat khong","co duoc quan sat khong","co an toan khong"],
+a:"Luôn có bác sĩ và kỹ thuật viên theo dõi liên tục để đảm bảo an toàn tuyệt đối."
+},
+
+{
+q:["co camera theo doi khong","co he thong giam sat khong","co duoc quan sat tu ben ngoai khong","co camera trong phong khong","bac si co thay benh nhan khong","co duoc theo doi lien tuc khong"],
+a:"Phòng điều trị được trang bị hệ thống camera và theo dõi để đảm bảo kiểm soát liên tục."
+},
+
+{
+q:["co lien lac voi bac si khong","co noi chuyen voi bac si duoc khong","co micro khong","co the goi bac si khong","co he thong lien lac khong","co duoc ho tro khi can khong"],
+a:"Bạn có thể liên lạc với bác sĩ qua hệ thống âm thanh nếu cần hỗ trợ."
+},
+
+{
+q:["co the dung giua chung khong","co duoc dung dieu tri khong","co the tam dung khong","neu khong thoai mai thi sao","co duoc dung may khong","co the hoan lai khong"],
+a:"Quá trình điều trị có thể tạm dừng nếu cần, bạn hãy báo cho nhân viên y tế."
+},
+
+{
+q:["co can gay me khong nguoi lon","nguoi lon co can me khong","lam gamma knife co gay me khong","co can ngu sau khong","co can gay me toan than khong","nguoi lon co can gay me"],
+a:"Người lớn thường không cần gây mê khi điều trị Gamma Knife."
+},
+
+{
+q:["tre em co can gay me khong","tre nho co gay me khong","tre em lam gamma knife the nao","co phai gay me cho tre khong","tre em co ngu khi dieu tri khong","gay me tre em"],
+a:"Trẻ em thường cần gây mê để đảm bảo giữ yên trong quá trình điều trị."
+},
+
+{
+q:["co can truyen dich khong","co phai truyen nuoc khong","co can truyen dich khi dieu tri khong","truyen dich de lam gi","co can kim truyen khong","co truyen nuoc bien khong"],
+a:"Việc truyền dịch tùy thuộc vào tình trạng cụ thể và chỉ định của bác sĩ."
+},
+
+{
+q:["co can tiem thuoc khong","co phai tiem thuoc ho tro khong","co tiem thuoc gi khong","co dung thuoc trong khi lam khong","co can thuoc bo tro khong","co tiem thuoc giam dau khong"],
+a:"Trong một số trường hợp, bác sĩ có thể chỉ định tiêm thuốc hỗ trợ phù hợp."
+},
+
+{
+q:["co can thuoc giam dau khong","co phai uong thuoc giam dau khong","co can dung thuoc khong","co bi dau sau khi lam khong","co can thuoc giam dau sau dieu tri khong","co can thuoc khong"],
+a:"Thông thường không cần dùng thuốc giảm đau, trừ khi có chỉ định cụ thể."
+},
+
+{
+q:["co can thuoc chong non khong","co phai uong thuoc chong non khong","co duoc ke thuoc khong","co bi non thi sao","co can thuoc khong","co duoc ho tro thuoc khong"],
+a:"Nếu có triệu chứng buồn nôn, bác sĩ sẽ kê thuốc phù hợp để hỗ trợ."
+},
+
+{
+q:["thoi gian chieu tia bao lau","chieu tia mat bao lau","lam gamma knife bao lau","tong thoi gian dieu tri bao lau","co lau khong","mat may gio"],
+a:"Thời gian chiếu tia có thể từ 30 phút đến vài giờ tùy theo từng trường hợp."
+},
+
+{
+q:["co the keo dai khong","co khi nao lam lau hon khong","co bi keo dai thoi gian khong","co mat nhieu gio khong","co phuc tap thi sao","co thay doi thoi gian khong"],
+a:"Thời gian điều trị có thể kéo dài hơn nếu trường hợp phức tạp."
+},
+
+{
+q:["co can nghi giua khong","co duoc nghi giua cac dot khong","co duoc dung giua khong","co chia thanh nhieu lan khong","co nghi giai lao khong","co duoc nghi khong"],
+a:"Một số trường hợp có thể có thời gian nghỉ ngắn giữa các giai đoạn điều trị."
+},
+
+{
+q:["co nhieu dot chieu khong","co phai lam nhieu lan khong","co phai chia nhieu dot khong","co dieu tri 1 lan hay nhieu lan","co lap lai khong","co can lam lai khong"],
+a:"Thông thường chỉ cần một đợt điều trị duy nhất."
+},
+
+{
+q:["co the dieu tri nhieu vi tri khong","co chieu nhieu u cung luc khong","co dieu tri nhieu ton thuong khong","co the lam nhieu diem khong","co xu ly nhieu vung khong","co chieu nhieu diem"],
+a:"Gamma Knife có thể điều trị nhiều tổn thương trong cùng một lần."
+},
+
+{
+q:["co can thay doi tu the khong","co duoc di chuyen khong","co duoc xoay dau khong","co phai giu nguyen tu the khong","co thay doi tu the trong luc lam khong","co can dieu chinh tu the"],
+a:"Bạn không cần thay đổi tư thế vì đầu đã được cố định chắc chắn."
+},
+
+{
+q:["co the di ve sinh khong","co duoc di ve sinh truoc khi lam khong","co duoc di giua chung khong","co can di ve sinh truoc khong","co duoc roi phong khong","co the dung de di ve sinh"],
+a:"Bạn nên đi vệ sinh trước khi bắt đầu để tránh gián đoạn trong quá trình điều trị."
+},
+
+{
+q:["co can nhin an trong luc lam khong","co duoc an khi dieu tri khong","co phai nhin an khong","co duoc an giua chung khong","co duoc an uong khong","co can nhin an"],
+a:"Bạn sẽ không ăn trong lúc chiếu tia, nhưng có thể ăn trước hoặc sau theo hướng dẫn."
+},
+
+{
+q:["uong nuoc","co duoc uong nuoc khong","co the uong nuoc trong luc lam khong","co bi han che nuoc khong","co can nhin nuoc khong","co duoc uong gi khong","co duoc bo sung nuoc khong"],
+a:"Việc uống nước trong lúc điều trị thường được hạn chế để đảm bảo quy trình không bị gián đoạn."
+},
+
+{
+q:["co theo doi huyet ap khong","co do huyet ap khong","co kiem tra huyet ap khong","co giam sat suc khoe khong","co theo doi sinh ton khong","co kiem tra lien tuc khong"],
+a:"Huyết áp và các chỉ số sinh tồn sẽ được theo dõi trong suốt quá trình điều trị."
+},
+
+{
+q:["co theo doi nhip tim khong","co kiem tra tim khong","co giam sat nhip tim khong","co theo doi ECG khong","co kiem tra lien tuc khong","co an toan khong"],
+a:"Nhịp tim của bạn cũng sẽ được theo dõi để đảm bảo an toàn."
+},
+
+{
+q:["co the nghe nhac khong","co duoc nghe nhac khong","co duoc thu gian bang nhac khong","co mo nhac trong phong khong","co duoc deo tai nghe khong","co nghe nhac duoc khong"],
+a:"Có thể nghe nhạc nhẹ để giúp bạn thư giãn trong lúc điều trị."
+},
+
+{
+q:["co duoc mang dien thoai khong","co duoc dung dien thoai khong","co mang dt vao phong duoc khong","co duoc lien lac bang dt khong","co duoc su dung dt khong","co bi cam dt khong"],
+a:"Thông thường bạn sẽ không sử dụng điện thoại trong phòng điều trị."
+},
+
+{
+q:["nguoi nha co vao duoc khong","nguoi than co vao phong khong","co duoc di cung nguoi nha khong","nguoi nha co o ben canh khong","co duoc theo doi cung khong","co vao phong dieu tri khong"],
+a:"Người nhà không được vào phòng chiếu, nhưng sẽ chờ bên ngoài."
+},
+
+{
+q:["co can ky giay them khong","co phai ky giay giua chung khong","co them thu tuc khong","co can ky them ho so khong","co giay to bo sung khong","co phai ky them khong"],
+a:"Bạn không cần ký thêm giấy tờ trong ngày điều trị."
+},
+
+{
+q:["co can xet nghiem lai khong","co phai lam lai xet nghiem khong","co kiem tra lai trong ngay khong","co can lam lai khong","co test lai khong","co phai xet nghiem lai"],
+a:"Thông thường không cần xét nghiệm lại trong ngày điều trị."
+},
+
+{
+q:["co the doi lich khong","co doi lich duoc khong","co the hoan lich khong","co thay doi lich duoc khong","co doi ngay dieu tri duoc khong","co hoan lich duoc khong"],
+a:"Bạn có thể đổi lịch nếu chưa bắt đầu điều trị, hãy liên hệ với bệnh viện để được hỗ trợ."
+},
+
+{
+q:["co the huy dieu tri khong","co huy lich duoc khong","co the dung dieu tri khong","co the khong lam nua khong","co duoc huy khong","co dung giua chung duoc khong"],
+a:"Bạn có thể hủy điều trị trước khi bắt đầu, nên trao đổi với bác sĩ để được tư vấn phù hợp."
+},
+
+{
+q:["co lo lang khong khi dieu tri","co binh thuong khi lo lang khong","co nen lo khong","co can tu van tam ly khong","co bi stress khong","co can ho tro khong"],
+a:"Lo lắng là điều bình thường, bạn nên trao đổi với bác sĩ để được giải thích và hỗ trợ."
+},
+
+{
+q:["co can chuan bi tam ly khong","co nen chuan bi tinh than khong","co can hieu quy trinh khong","co can duoc tu van khong","co can lam quen truoc khong","co can giam lo lang khong"],
+a:"Bạn nên chuẩn bị tâm lý thoải mái và hiểu rõ quy trình để quá trình điều trị diễn ra thuận lợi hơn."
+},
+
+{
+q:["met","met sau dieu tri","co met khong","sau lam co met khong","lam xong co met khong","co bi met sau gamma knife","nguoi co met khong"], 
+a:"Sau điều trị, một số bệnh nhân có thể cảm thấy mệt nhẹ trong thời gian ngắn. Đây là phản ứng khá thường gặp và không đáng lo ngại. Bạn nên nghỉ ngơi, uống đủ nước và theo dõi tình trạng cơ thể."},
+
+{
+q:["kho mieng","co kho mieng khong","sau lam co kho mieng","mieng co bi kho khong","co bi khat nuoc khong","co can uong nuoc khong","kho hong sau dieu tri"
+], 
+a:"Một số trường hợp có thể cảm thấy khô miệng sau điều trị. Bạn nên uống nước đầy đủ và giữ cơ thể đủ nước. Nếu triệu chứng kéo dài hoặc gây khó chịu, nên trao đổi thêm với bác sĩ."},
+
+{
+q:["cang dau","cang dau khong","co cam giac cang dau","dau co bi cang khong","co bi tuc dau khong","co cam giac nang dau","dau co kho chiu khong"],
+a:"Sau điều trị, bạn có thể cảm thấy hơi căng hoặc nặng đầu. Đây là phản ứng bình thường và thường sẽ giảm dần. Nếu cảm giác này kéo dài hoặc tăng lên, bạn nên thông báo với bác sĩ."},
+
+
+{
+q:["hoi hop","co hoi hop khong","co lo lang khong","co bi run khong","co cam giac lo lang","co thay lo khong","tam ly co hoi hop"], 
+a:"Cảm giác hồi hộp hoặc lo lắng trước và trong điều trị là hoàn toàn bình thường. Đội ngũ y tế sẽ luôn hỗ trợ và giải thích để bạn cảm thấy yên tâm hơn."},
+
+
+{
+q:["so","co so khong","co cam giac so khong","co bi hoang so khong","co lo lang qua khong","benh nhan co so khong","co thay bat an khong"],
+a:"Một số bệnh nhân có thể cảm thấy lo lắng hoặc sợ hãi. Đây là phản ứng tâm lý tự nhiên. Bạn có thể trao đổi trực tiếp với bác sĩ để được giải thích và hỗ trợ tốt hơn."},
+
+
+{
+q:["kho chiu","co kho chiu khong","co cam giac kho chiu","sau lam co kho chiu khong","co bi buc boi khong","co thay khong thoai mai","co bi met kho chiu"
+], 
+a:"Bạn có thể cảm thấy hơi khó chịu trong hoặc sau điều trị, tuy nhiên cảm giác này thường nhẹ và chỉ tạm thời. Nếu cần, nhân viên y tế sẽ hỗ trợ để bạn cảm thấy dễ chịu hơn."},
+
+
+{
+q:["ho tro","co nguoi ho tro khong","co ai ho tro khong","co nhan vien theo doi khong","co bac si o do khong","co ai giup khong","co nguoi cham soc khong"], a:"Trong suốt quá trình điều trị, luôn có bác sĩ và nhân viên y tế theo dõi và hỗ trợ bạn. Bạn có thể yên tâm vì sẽ không phải tự mình xử lý bất kỳ vấn đề nào."},
+
+
+{
+q:["keo dai","co the keo dai khong","co lau khong","qua trinh co keo dai","co bi lau khong","mat nhieu thoi gian khong","co bi tre khong"],
+a:"Thời gian điều trị có thể thay đổi tùy theo từng trường hợp cụ thể. Một số ca có thể kéo dài hơn dự kiến, tuy nhiên đội ngũ điều trị sẽ luôn thông báo rõ ràng cho bạn."},
+
+
+{
+q:["dieu chinh ke hoach","co dieu chinh duoc khong","co thay doi ke hoach","bac si co doi ke hoach","co sua ke hoach khong","co thay doi cach lam","co dieu chinh trong luc lam"],
+a:"Kế hoạch điều trị có thể được điều chỉnh nếu cần thiết nhằm đảm bảo hiệu quả và an toàn tối ưu cho bệnh nhân. Việc này hoàn toàn do bác sĩ quyết định dựa trên tình trạng cụ thể."},
+
+
+{
+q:["thay doi lieu","co doi lieu khong","lieu co thay doi","co dieu chinh lieu khong","bac si co doi lieu","co thay doi muc tia","co tang giam lieu"], 
+a:"Liều điều trị có thể được điều chỉnh tùy theo đặc điểm bệnh và đáp ứng của từng bệnh nhân. Quyết định này được thực hiện bởi bác sĩ chuyên môn nhằm đảm bảo hiệu quả tối đa."},
+
+
+{
+q:["gian doan","co bi gian doan khong","co bi dung giua","co bi ngat quang khong","co dung giua khong","co bi tre khong","co bi hoan khong"],
+a:"Quá trình điều trị hiếm khi bị gián đoạn. Trong trường hợp cần thiết, bác sĩ có thể tạm dừng để đảm bảo an toàn cho bệnh nhân."},
+
+
+{
+q:["kiem tra lai","co can kiem tra lai","co phai kiem tra","co check lai khong","co xem lai ket qua","co can xem lai khong","co danh gia lai"], 
+a:"Trong một số trường hợp, bác sĩ có thể cần kiểm tra hoặc đánh giá lại để đảm bảo kế hoạch điều trị chính xác và hiệu quả nhất."},
+
+
+{
+q:["cho lau","co phai cho lau khong","co phai doi lau","co mat thoi gian cho khong","co phai doi nhieu","co phai xep hang khong","co cho doi khong"], 
+a:"Bạn có thể cần chờ trong một số giai đoạn của quy trình, đặc biệt khi lập kế hoạch điều trị. Đây là điều bình thường và cần thiết để đảm bảo độ chính xác cao."},
+
+
+{
+q:["doi lich","co the doi lich khong","co thay doi lich","co doi gio khong","co doi ngay khong","co the doi trong ngay","co doi duoc khong"], 
+a:"Trong một số trường hợp, lịch điều trị có thể được điều chỉnh. Bạn nên trao đổi trực tiếp với nhân viên y tế để được hỗ trợ cụ thể."},
+
+
+{
+q:["tieng may","may co tieng khong","co on khong","may co keu khong","co tieng lon khong","co bi on khong","co nghe tieng may"], 
+a:"Trong quá trình điều trị, máy có thể phát ra một số âm thanh nhẹ. Đây là hiện tượng hoàn toàn bình thường và không gây ảnh hưởng đến bạn."},
+
+
+{
+q:["rung","co rung khong","may co rung khong","co cam giac rung khong","co bi rung dau khong","co chuyen dong khong","co bi lac khong"], 
+a:"Máy điều trị hầu như không gây rung. Trong một số trường hợp hiếm, bạn có thể cảm nhận rung nhẹ nhưng không đáng lo ngại."},
+
+
+{
+q:["moi co","co moi co khong","co bi moi co","co bi dau co khong","co cam giac moi co","co bi cang co khong","co kho chiu co khong"],
+a:"Do phải giữ đầu cố định trong một thời gian, bạn có thể cảm thấy mỏi cổ nhẹ. Tình trạng này thường thoáng qua và sẽ cải thiện sau khi nghỉ ngơi."},
+
+
+{
+q:["buon ngu","co buon ngu khong","co buồn ngủ khong","co muon ngu khong","co thay lim dim","co thay buon ngu","co bi ngu gat"], 
+a:"Bạn có thể cảm thấy buồn ngủ hoặc thư giãn trong quá trình điều trị. Đây là phản ứng bình thường của cơ thể."},
+
+{
+q:["stress","co bi stress khong","co lo lang khong","co ap luc khong","co cang thang khong","tam ly co on khong","co bi hoi hop qua"], 
+a:"Một số bệnh nhân có thể cảm thấy căng thẳng hoặc lo lắng. Bạn nên giữ tâm lý thoải mái và có thể trao đổi với bác sĩ để được hỗ trợ."},
+
+
+{
+q:["hoi bac si","co the hoi bac si khong","co duoc hoi khong","co the trao doi khong","co noi chuyen duoc khong","co hoi y kien khong","co the hoi truc tiep"], 
+a:"Bạn hoàn toàn có thể trao đổi và đặt câu hỏi với bác sĩ bất cứ khi nào cần. Đội ngũ y tế luôn sẵn sàng giải đáp để bạn hiểu rõ và yên tâm hơn."},
+
+// PHẦN 5 — SAU ĐIỀU TRỊ (171–220)
+
+{
+q:[
+"sau dieu tri gamma knife co can nam vien khong",
+"sau khi dieu tri co phai nam vien lai khong",
+"dieu tri xong co can o lai benh vien khong",
+"sau khi chieu tia co can nam vien qua dem khong",
+"lam gamma knife xong co can nhap vien khong",
+"sau dieu tri co can o lai theo doi tai benh vien khong"
+],
+a:"Thông thường, bệnh nhân không cần nằm viện sau điều trị Gamma Knife. Sau khi được theo dõi ổn định trong thời gian ngắn, bạn có thể ra về trong ngày theo hướng dẫn của bác sĩ."
+},
+
+{
+q:[
+"sau dieu tri gamma knife co the ve ngay trong ngay khong",
+"lam gamma knife xong co duoc ve nha ngay khong",
+"sau khi chieu tia co the xuat vien ngay khong",
+"dieu tri xong bao lau thi duoc ve nha",
+"sau dieu tri co can o lai theo doi lau khong",
+"co the roi benh vien ngay sau dieu tri khong"
+],
+a:"Trong nhiều trường hợp, bệnh nhân có thể về ngay trong ngày sau điều trị khi tình trạng ổn định. Việc ra về sẽ được bác sĩ quyết định dựa trên tình trạng cụ thể của bạn."
+},
+
+{
+q:[
+"sau dieu tri gamma knife co bi dau dau khong",
+"lam xong gamma knife co thay dau dau khong",
+"sau khi chieu tia co xuat hien dau dau khong",
+"dau dau sau dieu tri gamma knife co nguy hiem khong",
+"sau dieu tri co bi nhuc dau hay kho chiu khong",
+"dau dau sau chieu tia keo dai trong bao lau"
+],
+a:"Một số bệnh nhân có thể bị đau đầu nhẹ sau điều trị. Đây là phản ứng thường gặp, thường thoáng qua và sẽ cải thiện dần mà không gây ảnh hưởng nghiêm trọng."
+},
+
+{
+q:[
+"sau dieu tri gamma knife co bi buon non khong",
+"lam gamma knife xong co thay buon non khong",
+"sau khi chieu tia co xuat hien buon non khong",
+"buon non sau dieu tri gamma knife co nguy hiem khong",
+"sau dieu tri co bi non hay kho chiu da day khong",
+"neu buon non sau dieu tri thi nen xu ly the nao"
+],
+a:"Buồn nôn có thể xảy ra nhưng khá hiếm. Nếu xuất hiện, triệu chứng thường nhẹ và có thể được kiểm soát hiệu quả bằng thuốc theo chỉ định của bác sĩ."
+},
+
+{
+q:[
+"sau dieu tri gamma knife co bi chong mat khong",
+"lam gamma knife xong co thay chong mat khong",
+"sau khi chieu tia co bi choang vang khong",
+"chong mat sau dieu tri gamma knife keo dai bao lau",
+"sau dieu tri co bi mat thang bang hay khong",
+"neu bi chong mat sau dieu tri thi can lam gi"
+],
+a:"Một số bệnh nhân có thể cảm thấy chóng mặt nhẹ sau điều trị. Đây thường là tình trạng tạm thời và sẽ tự hồi phục, bạn nên nghỉ ngơi và theo dõi thêm."
+},
+
+{
+q:[
+"sau dieu tri gamma knife co bi met khong",
+"lam gamma knife xong co cam thay met moi khong",
+"sau khi chieu tia co bi u oai hay mat suc khong",
+"met moi sau dieu tri gamma knife keo dai bao lau",
+"sau dieu tri co can nghi ngoi nhieu khong",
+"neu met sau dieu tri thi can cham soc the nao"
+],
+a:"Bạn có thể cảm thấy mệt nhẹ sau điều trị. Đây là phản ứng bình thường, vì vậy bạn nên nghỉ ngơi trong ngày và duy trì sinh hoạt nhẹ nhàng để cơ thể hồi phục tốt hơn."
+},
+
+{
+q:[
+"sau dieu tri gamma knife co can nghi ngoi khong",
+"lam xong gamma knife co phai nghi ngoi khong",
+"sau khi chieu tia co can nam nghi trong ngay khong",
+"sau dieu tri co nen hoat dong nhe hay nghi ngoai",
+"co can han che van dong sau khi dieu tri khong",
+"sau dieu tri co nen nghi ngoi de hoi phuc khong"
+],
+a:"Bạn nên nghỉ ngơi trong ngày điều trị để cơ thể thích nghi và hồi phục tốt hơn. Sau đó có thể sinh hoạt nhẹ nhàng theo hướng dẫn của bác sĩ."
+},
+
+{
+q:[
+"sau dieu tri bao lau co the di lam lai",
+"lam gamma knife xong bao lau di lam duoc",
+"sau khi chieu tia khi nao co the lam viec",
+"thoi gian hoi phuc de quay lai cong viec la bao lau",
+"sau dieu tri co can nghi lam lau khong",
+"khi nao co the tro lai cong viec binh thuong"
+],
+a:"Thông thường, bạn có thể quay lại làm việc sau khoảng 1–2 ngày nếu cảm thấy sức khỏe ổn định. Tuy nhiên, nên lắng nghe cơ thể và tuân theo tư vấn của bác sĩ."
+},
+
+{
+q:[
+"sau dieu tri gamma knife co the lai xe duoc khong",
+"lam gamma knife xong co duoc lai xe ngay khong",
+"sau khi chieu tia co nen lai xe khong",
+"sau dieu tri bao lau moi duoc lai xe an toan",
+"co can tranh lai xe sau khi dieu tri khong",
+"sau dieu tri co bi anh huong den lai xe khong"
+],
+a:"Bạn nên tránh lái xe trong 24 giờ đầu sau điều trị để đảm bảo an toàn, đặc biệt nếu còn cảm giác mệt hoặc chóng mặt."
+},
+
+{
+q:[
+"sau dieu tri bao lau co the tam duoc",
+"lam gamma knife xong co duoc tam ngay khong",
+"sau khi chieu tia co the tam khi nao",
+"sau dieu tri co can kieng tam trong bao lau",
+"co the tam nuoc binh thuong sau dieu tri khong",
+"sau dieu tri tam co anh huong gi khong"
+],
+a:"Bạn có thể tắm sau vài giờ nếu cảm thấy khỏe. Nên tắm nhẹ nhàng và tránh tác động mạnh vào vùng đầu vừa điều trị."
+},
+
+{
+q:[
+"sau dieu tri bao lau co the goi dau",
+"lam gamma knife xong co duoc goi dau ngay khong",
+"sau khi chieu tia khi nao duoc goi dau",
+"sau dieu tri co can kieng goi dau khong",
+"bao lau sau dieu tri thi goi dau an toan",
+"goi dau sau dieu tri co anh huong gi khong"
+],
+a:"Thông thường, bạn có thể gội đầu sau 1–2 ngày, tùy theo tình trạng vùng cố định đầu. Nên thực hiện nhẹ nhàng và theo hướng dẫn của bác sĩ."
+},
+
+{
+q:[
+"sau dieu tri co the an uong binh thuong khong",
+"lam gamma knife xong co duoc an uong nhu cu khong",
+"sau khi chieu tia co can kieng an khong",
+"sau dieu tri co can an kieng dac biet khong",
+"che do an sau dieu tri gamma knife nhu the nao",
+"co nen an uong lanh manh sau dieu tri khong"
+],
+a:"Bạn có thể ăn uống bình thường sau điều trị. Nên duy trì chế độ ăn lành mạnh, đầy đủ dinh dưỡng để hỗ trợ quá trình hồi phục."
+},
+
+{
+q:[
+"sau dieu tri co can kieng gi khong",
+"lam gamma knife xong co phai kieng cu gi khong",
+"sau khi chieu tia co can tranh hoat dong gi khong",
+"sau dieu tri co can han che van dong khong",
+"co nen tranh lam viec nang sau dieu tri khong",
+"sau dieu tri co can luu y gi trong sinh hoat khong"
+],
+a:"Thông thường không cần kiêng khem nhiều. Tuy nhiên, bạn nên tránh vận động mạnh trong vài ngày đầu và duy trì sinh hoạt nhẹ nhàng."
+},
+
+{
+q:[
+"sau dieu tri co can uong thuoc khong",
+"lam gamma knife xong co phai dung thuoc khong",
+"sau khi chieu tia co duoc ke thuoc khong",
+"sau dieu tri co can dung thuoc theo don khong",
+"co phai uong thuoc sau dieu tri gamma knife khong",
+"thuoc sau dieu tri co quan trong khong"
+],
+a:"Bạn có thể được kê một số thuốc tùy theo tình trạng cụ thể. Hãy tuân thủ đúng hướng dẫn của bác sĩ để đảm bảo hiệu quả và an toàn."
+},
+
+{
+q:[
+"sau dieu tri co can tai kham khong",
+"lam gamma knife xong co phai di tai kham khong",
+"sau khi chieu tia co can theo doi tai kham khong",
+"tai kham sau dieu tri gamma knife co bat buoc khong",
+"co can theo doi lau dai sau dieu tri khong",
+"sau dieu tri co can den benh vien kiem tra khong"
+],
+a:"Tái khám là rất quan trọng để đánh giá hiệu quả điều trị và theo dõi tình trạng bệnh. Bạn nên tuân thủ đầy đủ lịch hẹn của bác sĩ."
+},
+
+{
+q:[
+"sau dieu tri bao lau can tai kham lai",
+"lam gamma knife xong khi nao can di tai kham",
+"sau khi chieu tia lich tai kham nhu the nao",
+"thoi gian tai kham sau dieu tri la bao lau",
+"co can tai kham som sau dieu tri khong",
+"bac si hen tai kham sau dieu tri bao lau"
+],
+a:"Thông thường, bệnh nhân sẽ được hẹn tái khám sau khoảng 1–3 tháng. Thời gian cụ thể có thể thay đổi tùy theo tình trạng bệnh."
+},
+
+{
+q:[
+"sau dieu tri co can chup MRI lai khong",
+"lam gamma knife xong co phai chup lai MRI khong",
+"sau khi chieu tia co can kiem tra MRI khong",
+"chup MRI sau dieu tri co bat buoc khong",
+"co can danh gia ket qua bang MRI khong",
+"sau dieu tri co can theo doi bang MRI khong"
+],
+a:"Có, chụp MRI lại là cần thiết để đánh giá đáp ứng điều trị và theo dõi tiến triển của tổn thương."
+},
+
+{
+q:[
+"sau dieu tri bao lau chup MRI lai",
+"lam gamma knife xong khi nao chup lai MRI",
+"sau khi chieu tia lich chup MRI nhu the nao",
+"thoi gian chup MRI sau dieu tri la bao lau",
+"co can chup MRI dinh ky sau dieu tri khong",
+"bac si se hen chup MRI sau bao lau"
+],
+a:"Thông thường, MRI được thực hiện lại sau khoảng 3–6 tháng hoặc theo chỉ định cụ thể của bác sĩ."
+},
+
+{
+q:[
+"sau dieu tri co can lam xet nghiem khong",
+"lam gamma knife xong co phai xet nghiem them khong",
+"sau khi chieu tia co can kiem tra gi them khong",
+"sau dieu tri co can xet nghiem mau khong",
+"co can lam them cac kiem tra sau dieu tri khong",
+"bac si co chi dinh xet nghiem sau dieu tri khong"
+],
+a:"Tùy từng trường hợp cụ thể, bác sĩ có thể chỉ định thêm một số xét nghiệm để theo dõi và đảm bảo an toàn cho bệnh nhân."
+},
+
+{q:[
+"sau dieu tri gamma knife co nen sinh hoat nhe khong",
+"sau khi chieu tia co duoc van dong nhe khong",
+"lam xong gamma knife co nen di lai nhe khong",
+"sau dieu tri co duoc hoat dong nhe hang ngay khong",
+"sau chieu tia co nen di bo nhe khong",
+"co nen sinh hoat nhe sau khi dieu tri gamma knife"
+],
+a:"Sau điều trị, bạn nên sinh hoạt nhẹ nhàng trong vài ngày đầu để cơ thể có thời gian hồi phục tốt hơn và thích nghi dần."
+},
+
+{q:[
+"sau dieu tri gamma knife co duoc van dong manh ngay khong",
+"sau khi chieu tia co nen tap nang ngay khong",
+"lam xong gamma knife co nen hoat dong manh khong",
+"sau dieu tri co can tranh van dong manh khong",
+"sau chieu tia co duoc choi the thao manh khong",
+"co nen tap the duc manh sau khi dieu tri khong"
+],
+a:"Bạn không nên vận động mạnh ngay sau điều trị, nên chờ vài ngày và chỉ quay lại hoạt động khi cơ thể đã ổn định."
+},
+
+{q:[
+"sau dieu tri gamma knife co can theo doi trieu chung khong",
+"sau khi chieu tia co phai theo doi suc khoe khong",
+"lam xong gamma knife co can quan sat bat thuong khong",
+"sau dieu tri co can de y dau hieu la khong",
+"sau chieu tia co can theo doi trieu chung hang ngay khong",
+"co can theo doi suc khoe sau khi dieu tri gamma knife"
+],
+a:"Việc theo dõi triệu chứng sau điều trị là rất quan trọng để phát hiện sớm các dấu hiệu bất thường và xử trí kịp thời."
+},
+
+{q:[
+"sau dieu tri gamma knife nen theo doi nhung dau hieu nao",
+"sau khi chieu tia can chu y trieu chung gi",
+"lam xong gamma knife co can de y dau dau khong",
+"sau dieu tri co can theo doi buon non chong mat khong",
+"sau chieu tia co can quan sat trieu chung nao khong",
+"co can theo doi cac dau hieu bat thuong sau dieu tri khong"
+],
+a:"Bạn nên theo dõi các dấu hiệu như đau đầu, buồn nôn, chóng mặt hoặc bất kỳ biểu hiện bất thường nào để kịp thời thông báo cho bác sĩ."
+},
+
+{q:[
+"sau dieu tri gamma knife neu co dau hieu bat thuong lam gi",
+"sau khi chieu tia co trieu chung la phai lam sao",
+"lam xong gamma knife co can di benh vien neu bat thuong khong",
+"sau dieu tri co can lien he bac si khi co trieu chung khong",
+"sau chieu tia co can xu ly khi co dau hieu nguy hiem khong",
+"co nen den co so y te khi co trieu chung la khong"
+],
+a:"Nếu xuất hiện triệu chứng bất thường, bạn nên liên hệ ngay với bác sĩ hoặc đến cơ sở y tế để được kiểm tra và xử trí kịp thời."
+},
+
+{q:[
+"sau dieu tri gamma knife co can ghi lai trieu chung khong",
+"sau khi chieu tia co nen ghi chep tinh trang suc khoe khong",
+"lam xong gamma knife co can theo doi va ghi lai trieu chung khong",
+"sau dieu tri co can ghi nhan dau hieu bat thuong khong",
+"sau chieu tia co nen luu lai trieu chung de bao bac si khong",
+"co can ghi chep trieu chung sau khi dieu tri gamma knife khong"
+],
+a:"Bạn nên ghi lại các triệu chứng nếu có để giúp bác sĩ đánh giá chính xác hơn trong các lần tái khám."
+},
+
+{q:[
+"sau dieu tri gamma knife co can tai kham dung lich khong",
+"sau khi chieu tia co phai di tai kham dung hen khong",
+"lam xong gamma knife co can tuan thu lich tai kham khong",
+"sau dieu tri co can di tai kham theo huong dan khong",
+"sau chieu tia co can tai kham dinh ky khong",
+"co can tai kham dung hen sau khi dieu tri gamma knife khong"
+],
+a:"Việc tái khám đúng lịch hẹn là rất quan trọng để bác sĩ theo dõi hiệu quả điều trị và đánh giá tình trạng bệnh."
+},
+
+{q:[
+"sau dieu tri gamma knife quen lich tai kham phai lam sao",
+"sau khi chieu tia bo lo lich hen co sao khong",
+"lam xong gamma knife quen tai kham co can dat lai khong",
+"sau dieu tri co can lien he benh vien khi quen lich khong",
+"sau chieu tia co the sap xep lai lich tai kham khong",
+"co nen lien he lai benh vien khi quen lich tai kham khong"
+],
+a:"Nếu bạn quên lịch tái khám, nên chủ động liên hệ với bệnh viện để được sắp xếp lại lịch phù hợp."
+},
+
+{q:[
+"sau dieu tri gamma knife co the tai kham som hon khong",
+"sau khi chieu tia co duoc di kham truoc lich khong",
+"lam xong gamma knife co nen tai kham som khi co trieu chung khong",
+"sau dieu tri co the gap bac si som hon lich hen khong",
+"sau chieu tia co nen di kham som neu thay bat thuong khong",
+"co duoc tai kham som hon lich sau khi dieu tri khong"
+],
+a:"Bạn có thể tái khám sớm hơn nếu xuất hiện triệu chứng bất thường hoặc khi có chỉ định từ bác sĩ."
+},
+
+{q:[
+"sau dieu tri gamma knife co can nghi ngoi nhieu khong",
+"sau khi chieu tia co phai nam nghi nhieu khong",
+"lam xong gamma knife co can nghi ngo nhieu khong",
+"sau dieu tri co nen lam viec ngay khong",
+"sau chieu tia co can tranh lam viec qua suc khong",
+"co can nghi ngo hop ly sau khi dieu tri gamma knife khong"
+],
+a:"Bạn nên nghỉ ngơi hợp lý, không cần nằm quá nhiều nhưng nên tránh làm việc quá sức trong những ngày đầu."
+},
+
+{q:[
+"sau dieu tri gamma knife co can ngu du giac khong",
+"sau khi chieu tia ngu co quan trong khong",
+"lam xong gamma knife co can ngu som khong",
+"sau dieu tri co can dam bao giac ngu khong",
+"sau chieu tia ngu du co giup hoi phuc khong",
+"co can ngu du sau khi dieu tri gamma knife khong"
+],
+a:"Ngủ đủ giấc là rất quan trọng, giúp cơ thể hồi phục nhanh hơn và giảm cảm giác mệt mỏi."
+},
+
+{q:[
+"sau dieu tri gamma knife co can uong du nuoc khong",
+"sau khi chieu tia co nen uong nhieu nuoc khong",
+"lam xong gamma knife co can bo sung nuoc khong",
+"sau dieu tri uong nuoc co giup hoi phuc khong",
+"sau chieu tia co can giu du nuoc khong",
+"co nen uong du nuoc sau khi dieu tri gamma knife khong"
+],
+a:"Bạn nên uống đủ nước mỗi ngày để hỗ trợ quá trình hồi phục và duy trì sức khỏe ổn định."
+},
+
+{q:[
+"sau dieu tri gamma knife co can an uong lanh manh khong",
+"sau khi chieu tia nen an uong nhu the nao",
+"lam xong gamma knife co can an du chat khong",
+"sau dieu tri co nen duy tri che do an tot khong",
+"sau chieu tia co can an uong khoa hoc khong",
+"co nen an uong lanh manh sau khi dieu tri gamma knife khong"
+],
+a:"Bạn nên duy trì chế độ ăn uống lành mạnh, đầy đủ dinh dưỡng để hỗ trợ quá trình hồi phục."
+},
+
+{q:[
+"sau dieu tri gamma knife co nen tranh stress khong",
+"sau khi chieu tia co can giu tinh than thoai mai khong",
+"lam xong gamma knife co nen han che lo lang khong",
+"sau dieu tri stress co anh huong hoi phuc khong",
+"sau chieu tia co can giu tam ly on dinh khong",
+"co nen tranh ap luc sau khi dieu tri gamma knife khong"
+],
+a:"Giữ tinh thần thoải mái và hạn chế căng thẳng sẽ giúp quá trình hồi phục diễn ra thuận lợi hơn."
+},
+
+{q:[
+"sau dieu tri gamma knife bao lau sinh hoat binh thuong",
+"sau khi chieu tia bao lau tro lai cuoc song binh thuong",
+"lam xong gamma knife khi nao hoat dong binh thuong",
+"sau dieu tri bao lau co the sinh hoat nhu cu",
+"sau chieu tia bao lau hoi phuc sinh hoat hang ngay",
+"co the sinh hoat binh thuong sau dieu tri gamma knife bao lau"
+],
+a:"Thông thường bạn có thể trở lại sinh hoạt bình thường sau vài ngày nếu sức khỏe ổn định và không có triệu chứng bất thường."
+},
+
+{q:[
+"sau dieu tri gamma knife co can theo doi lau dai khong",
+"sau khi chieu tia co phai theo doi dinh ky khong",
+"lam xong gamma knife co can kiem tra lau dai khong",
+"sau dieu tri co can quan ly benh lau dai khong",
+"sau chieu tia co can tai kham nhieu lan khong",
+"co can theo doi lau dai sau khi dieu tri gamma knife khong"
+],
+a:"Việc theo dõi lâu dài là cần thiết để đánh giá hiệu quả điều trị và phát hiện sớm nguy cơ tái phát."
+},
+
+{q:[
+"sau dieu tri gamma knife co can chup MRI dinh ky khong",
+"sau khi chieu tia co phai chup MRI de theo doi khong",
+"lam xong gamma knife co can kiem tra hinh anh khong",
+"sau dieu tri co can chup MRI lai khong",
+"sau chieu tia co can danh gia ket qua bang MRI khong",
+"co can chup MRI sau khi dieu tri gamma knife khong"
+],
+a:"Chụp MRI định kỳ là cần thiết để đánh giá đáp ứng điều trị và theo dõi tiến triển của bệnh."
+},
+
+{q:[
+"sau dieu tri gamma knife thay khoe co can tai kham khong",
+"sau khi chieu tia khong trieu chung co can di kham khong",
+"lam xong gamma knife co the bo tai kham khong",
+"sau dieu tri on dinh co can di tai kham khong",
+"sau chieu tia co can theo doi du khong",
+"co can tai kham du khong khi thay khoe sau dieu tri"
+],
+a:"Ngay cả khi cảm thấy khỏe, bạn vẫn nên tái khám theo lịch để đảm bảo kiểm soát bệnh hiệu quả."
+},
+
+{q:[
+"sau dieu tri gamma knife dieu quan trong nhat la gi",
+"sau khi chieu tia can chu y dieu gi nhat",
+"lam xong gamma knife can nho dieu gi quan trong",
+"sau dieu tri can thuc hien nguyen tac gi",
+"sau chieu tia can quan tam dieu gi nhat",
+"nguyen tac cham soc sau dieu tri gamma knife la gi"
+],
+a:"Điều quan trọng nhất sau điều trị là sinh hoạt hợp lý, theo dõi triệu chứng và tái khám đúng hẹn theo hướng dẫn của bác sĩ."
+},
+
+// PHẦN 6 — BIẾN CHỨNG (221–260)
+{q:[
+"gamma knife co de lai bien chung sau dieu tri khong",
+"dieu tri gamma knife co tac dong phu gi khong",
+"sau xa phau nao co xuat hien bien chung khong",
+"phuong phap gamma knife co nguy co gi khong",
+"lam gamma knife co anh huong suc khoe khong",
+"xa phau nao bang gamma knife co an toan khong"
+],
+a:"Điều trị bằng Gamma Knife có thể kèm theo một số tác dụng phụ, tuy nhiên phần lớn là nhẹ và có thể kiểm soát tốt khi được theo dõi bởi bác sĩ chuyên khoa."
+},
+
+{q:[
+"sau gamma knife co bi phu nao hay sung nao khong",
+"dieu tri nao co lam phu nao sau do khong",
+"xa phau gamma knife co nguy co phu nao khong",
+"sau chieu tia nao co bi sung nao khong",
+"phu nao sau dieu tri gamma knife co nguy hiem khong",
+"nguy co phu nao sau xa phau nao co cao khong"
+],
+a:"Phù não có thể xảy ra ở một số trường hợp, tuy nhiên thường được kiểm soát hiệu quả bằng thuốc và theo dõi y khoa phù hợp."
+},
+
+{q:[
+"sau khi lam gamma knife co bi dau dau khong",
+"xa phau nao co gay dau dau sau dieu tri khong",
+"chieu tia nao xong co bi dau dau khong",
+"dau dau sau gamma knife co keo dai khong",
+"lam gamma knife xong co cam giac dau dau khong",
+"trieu chung dau dau sau dieu tri co nguy hiem khong"
+],
+a:"Sau điều trị, một số bệnh nhân có thể cảm thấy đau đầu nhẹ, nhưng triệu chứng này thường thoáng qua và giảm dần theo thời gian."
+},
+
+{q:[
+"gamma knife co gay buon non sau dieu tri khong",
+"sau xa phau nao co cam giac buon non khong",
+"chieu tia nao co lam non hoac buon non khong",
+"lam gamma knife xong co bi non khong",
+"trieu chung buon non sau dieu tri co pho bien khong",
+"buon non sau gamma knife co can dieu tri khong"
+],
+a:"Buồn nôn là triệu chứng ít gặp, và nếu xảy ra thường ở mức độ nhẹ, có thể kiểm soát tốt bằng thuốc theo hướng dẫn của bác sĩ."
+},
+
+{q:[
+"sau dieu tri gamma knife co bi co giat khong",
+"xa phau nao co lam tang nguy co co giat khong",
+"chieu tia nao co gay co giat sau dieu tri khong",
+"lam gamma knife co xuat hien co giat khong",
+"co giat sau dieu tri co can lo lang khong",
+"nguy co co giat sau gamma knife co cao khong"
+],
+a:"Co giật là biến chứng hiếm gặp sau điều trị, tuy nhiên cần được theo dõi chặt chẽ và thông báo ngay cho bác sĩ nếu xuất hiện."
+},
+
+{q:[
+"sau gamma knife co bi giam van dong tay chan khong",
+"xa phau nao co gay yeu liet sau dieu tri khong",
+"lam gamma knife xong co bi yeu tay chan khong",
+"chieu tia nao co lam mat suc co khong",
+"yeu liet sau dieu tri co lien quan vi tri nao khong",
+"nguy co yeu liet sau gamma knife co thuong gap khong"
+],
+a:"Yếu liệt là biến chứng hiếm và thường liên quan đến vị trí tổn thương trong não, bác sĩ sẽ đánh giá kỹ để hạn chế nguy cơ này."
+},
+
+{q:[
+"gamma knife co anh huong tri nho sau dieu tri khong",
+"sau xa phau nao co bi giam tri nho khong",
+"chieu tia nao co lam mat tri nho khong",
+"lam gamma knife co gay suy giam tri nho khong",
+"tri nho sau dieu tri co bi anh huong lau dai khong",
+"nguy co mat tri nho sau gamma knife co cao khong"
+],
+a:"Ảnh hưởng đến trí nhớ là rất hiếm và thường phụ thuộc vào vùng não điều trị cũng như liều xạ được sử dụng."
+},
+
+{q:[
+"sau dieu tri gamma knife co thay doi hanh vi khong",
+"xa phau nao co gay roi loan tam ly khong",
+"chieu tia nao co anh huong tinh cach khong",
+"lam gamma knife xong co bi thay doi hanh vi khong",
+"roi loan hanh vi sau dieu tri co pho bien khong",
+"gamma knife co tac dong den tam ly nguoi benh khong"
+],
+a:"Rối loạn hành vi là biến chứng hiếm gặp, tuy nhiên cần theo dõi và trao đổi với bác sĩ nếu có biểu hiện bất thường."
+},
+
+{q:[
+"sau gamma knife co bi rung toc o vung dieu tri khong",
+"chieu tia nao co gay mat toc khong",
+"lam gamma knife xong co rung toc nhieu khong",
+"xa phau nao co anh huong den toc khong",
+"rung toc sau dieu tri co xay ra thuong xuyen khong",
+"gamma knife co lam rung toc toan bo dau khong"
+],
+a:"Rụng tóc ít gặp và nếu có thường chỉ xảy ra ở vùng nhỏ gần vị trí chiếu tia, không ảnh hưởng toàn bộ da đầu."
+},
+
+{q:[
+"sau dieu tri gamma knife co bi nhiem trung khong",
+"xa phau nao co nguy co nhiem trung khong",
+"lam gamma knife xong co can lo nhiem trung khong",
+"chieu tia nao co gay nhiem trung khong",
+"nguy co nhiem trung sau dieu tri co cao khong",
+"gamma knife co lam tang nguy co nhiem trung khong"
+],
+a:"Nguy cơ nhiễm trùng là rất thấp vì Gamma Knife là phương pháp không xâm lấn, không có vết mổ trên da."
+},
+
+{q:[
+"co bi sung tai cho gan khung khong",
+"sau gan khung co bi sung dau khong",
+"vung co dinh dau co bi sung khong",
+"gan khung co lam sung vung dau khong",
+"sung sau gan khung co thuong gap khong",
+"sung dau sau dieu tri gamma knife co nguy hiem khong"
+],
+a:"Sau khi gắn khung, bạn có thể bị sưng nhẹ tại chỗ, tuy nhiên đây là phản ứng bình thường và thường tự giảm sau vài ngày."
+},
+
+{q:[
+"co chay mau tai vi tri gan khung khong",
+"gan khung co gay chay mau dau khong",
+"sau gan khung co bi ri mau khong",
+"vi tri co dinh dau co bi chay mau khong",
+"chay mau sau gan khung co nguy hiem khong",
+"chay mau vung dau sau dieu tri co thuong khong"
+],
+a:"Chảy máu tại vị trí gắn khung là hiếm gặp, nếu có thường rất ít và có thể tự cầm mà không cần can thiệp."
+},
+
+{q:[
+"co bi bam da vung dau sau dieu tri khong",
+"sau gan khung co bi bam tim khong",
+"vung dau co bi bam sau khi co dinh khong",
+"bam da sau gamma knife co thuong khong",
+"gan khung co lam bam vung dau khong",
+"bam dau sau dieu tri co nguy hiem khong"
+],
+a:"Bạn có thể xuất hiện bầm nhẹ quanh vị trí cố định, tuy nhiên tình trạng này thường không nghiêm trọng và sẽ tự hết."
+},
+
+{q:[
+"co bi dau tai cho gan khung khong",
+"sau gan khung co bi dau dau khong",
+"gan khung co gay dau nhieu khong",
+"dau tai vi tri co dinh dau co thuong gap khong",
+"dau sau gan khung keo dai bao lau",
+"dau vung dau sau dieu tri co nguy hiem khong"
+],
+a:"Bạn có thể cảm thấy đau nhẹ tại vị trí gắn khung, nhưng cảm giác này thường giảm nhanh sau khi kết thúc điều trị."
+},
+
+{q:[
+"co bi nhiem trung tai cho gan khung khong",
+"gan khung co gay nhiem trung khong",
+"vung co dinh dau co bi viem khong",
+"nhiem trung sau gan khung co thuong khong",
+"nguy co nhiem trung vung dau sau dieu tri la gi",
+"co can lo nhiem trung sau gamma knife khong"
+],
+a:"Nguy cơ nhiễm trùng tại vị trí gắn khung là rất thấp nếu được chăm sóc đúng cách theo hướng dẫn của bác sĩ."
+},
+
+{q:[
+"co bi te da dau sau dieu tri khong",
+"gan khung co lam te dau khong",
+"vung dau co bi mat cam giac khong",
+"te dau sau gamma knife co thuong gap khong",
+"te da dau co keo dai khong",
+"te vung dau sau dieu tri co nguy hiem khong"
+],
+a:"Một số bệnh nhân có thể cảm thấy tê nhẹ vùng da đầu, tuy nhiên tình trạng này thường chỉ tạm thời và sẽ cải thiện dần."
+},
+
+{q:[
+"co bi ngua da dau sau dieu tri khong",
+"vung dau co bi ngua sau gan khung khong",
+"ngua sau gamma knife co thuong khong",
+"ngua da dau co can dieu tri khong",
+"cam giac ngua sau dieu tri co nguy hiem khong",
+"ngua vung dau sau dieu tri bao lau het"
+],
+a:"Bạn có thể cảm thấy ngứa nhẹ vùng da đầu trong quá trình hồi phục, đây là phản ứng bình thường và sẽ giảm dần."
+},
+
+{q:[
+"co bi sung quanh mat sau dieu tri khong",
+"gan khung co lam sung mat khong",
+"sau gamma knife co bi phu quanh mat khong",
+"sung mat sau dieu tri co thuong gap khong",
+"sung quanh mat co nguy hiem khong",
+"sung mat sau dieu tri bao lau het"
+],
+a:"Một số trường hợp có thể bị sưng nhẹ quanh mắt, đặc biệt khi điều trị gần vùng này, tuy nhiên thường sẽ tự cải thiện."
+},
+
+{q:[
+"co bi nhin mo sau dieu tri khong",
+"gamma knife co lam mo mat khong",
+"sau chieu tia co bi giam thi luc khong",
+"nhin mo sau dieu tri co thuong gap khong",
+"thi luc co bi anh huong sau gamma knife khong",
+"nhin mo co keo dai khong"
+],
+a:"Nhìn mờ là triệu chứng hiếm gặp và nếu xảy ra thường chỉ thoáng qua, bạn nên báo bác sĩ nếu kéo dài."
+},
+
+{q:[
+"co bi kho mat sau dieu tri khong",
+"gamma knife co gay kho mat khong",
+"sau chieu tia co cam giac kho mat khong",
+"kho mat sau dieu tri co thuong gap khong",
+"kho mat co can dieu tri khong",
+"kho mat sau gamma knife co keo dai khong"
+],
+a:"Khô mắt có thể xảy ra nhẹ ở một số bệnh nhân, tùy thuộc vị trí điều trị và thường không kéo dài."
+},
+
+{q:[
+"co bi u tai sau dieu tri khong",
+"gamma knife co lam u tai khong",
+"sau chieu tia co nghe tieng u khong",
+"u tai sau dieu tri co thuong gap khong",
+"u tai co nguy hiem khong",
+"u tai sau gamma knife co het khong"
+],
+a:"Ù tai là triệu chứng hiếm gặp và thường phụ thuộc vào vùng não được điều trị."
+},
+
+{q:[
+"co bi giam thinh luc sau dieu tri khong",
+"gamma knife co lam giam nghe khong",
+"sau chieu tia co bi yeu tai khong",
+"giam thinh luc co thuong gap khong",
+"thinh luc co phuc hoi duoc khong",
+"giam nghe sau dieu tri co nguy hiem khong"
+],
+a:"Giảm thính lực là rất hiếm và thường liên quan đến vị trí điều trị, bác sĩ sẽ đánh giá nguy cơ trước khi thực hiện."
+},
+
+{q:[
+"co bi mat thang bang sau dieu tri khong",
+"gamma knife co lam choang vang khong",
+"sau chieu tia co bi mat can bang khong",
+"choang vang sau dieu tri co thuong khong",
+"mat thang bang co keo dai khong",
+"mat can bang co nguy hiem khong"
+],
+a:"Bạn có thể cảm thấy mất thăng bằng nhẹ và tạm thời, tình trạng này thường cải thiện nhanh."
+},
+
+{q:[
+"co bi run tay chan sau dieu tri khong",
+"gamma knife co lam run tay khong",
+"sau chieu tia co run khong",
+"run tay chan co thuong gap khong",
+"run co can dieu tri khong",
+"run sau dieu tri co nguy hiem khong"
+],
+a:"Run tay chân là triệu chứng hiếm gặp, nếu xuất hiện bạn nên theo dõi và thông báo cho bác sĩ."
+},
+
+{q:[
+"co bi yeu tam thoi sau dieu tri khong",
+"gamma knife co lam giam suc khong",
+"sau chieu tia co cam giac yeu khong",
+"yeu tam thoi co thuong gap khong",
+"yeu co hoi phuc khong",
+"yeu sau dieu tri co nguy hiem khong"
+],
+a:"Bạn có thể cảm thấy yếu nhẹ tạm thời, tuy nhiên tình trạng này thường hồi phục tốt."
+},
+
+{q:[
+"co bi roi loan cam giac sau dieu tri khong",
+"gamma knife co lam te hoac kim cham khong",
+"sau chieu tia co mat cam giac khong",
+"roi loan cam giac co thuong gap khong",
+"te bi cam giac co keo dai khong",
+"roi loan cam giac co nguy hiem khong"
+],
+a:"Một số bệnh nhân có thể gặp rối loạn cảm giác nhẹ như tê hoặc châm chích, thường chỉ thoáng qua."
+},
+
+{q:[
+"co bi noi kho sau dieu tri khong",
+"gamma knife co anh huong loi noi khong",
+"sau chieu tia co bi kho noi khong",
+"noi kho co thuong gap khong",
+"noi kho co phuc hoi duoc khong",
+"roi loan ngon ngu co nguy hiem khong"
+],
+a:"Nói khó là biến chứng hiếm và phụ thuộc vị trí điều trị, nếu xuất hiện cần báo bác sĩ để được đánh giá."
+},
+
+{q:[
+"co bi nuot kho sau dieu tri khong",
+"gamma knife co lam kho nuot khong",
+"sau chieu tia co nuot kho khong",
+"nuot kho co thuong gap khong",
+"nuot kho co nguy hiem khong",
+"nuot kho co can dieu tri khong"
+],
+a:"Nuốt khó là rất hiếm, nếu có bạn nên thông báo ngay để được hỗ trợ kịp thời."
+},
+
+{q:[
+"co bi thay doi vi giac sau dieu tri khong",
+"gamma knife co lam mat vi giac khong",
+"sau chieu tia co thay doi vi khong",
+"vi giac co bi anh huong khong",
+"thay doi vi giac co keo dai khong",
+"mat vi giac co thuong gap khong"
+],
+a:"Thay đổi vị giác là hiếm gặp và thường chỉ tạm thời."
+},
+
+{q:[
+"co bi thay doi khu giac sau dieu tri khong",
+"gamma knife co lam mat mui khong",
+"sau chieu tia co thay doi mui khong",
+"khu giac co bi anh huong khong",
+"mat mui co thuong gap khong",
+"khu giac co phuc hoi duoc khong"
+],
+a:"Thay đổi khứu giác là rất hiếm và thường không kéo dài."
+},
+
+{q:[
+"co bi tang ap luc noi so sau dieu tri khong",
+"gamma knife co lam tang ap nao khong",
+"sau chieu tia co bi dau dau nang khong",
+"tang ap noi so co nguy hiem khong",
+"trieu chung tang ap nao la gi",
+"can lam gi khi co dau hieu bat thuong"
+],
+a:"Tăng áp lực nội sọ là hiếm gặp, nhưng cần theo dõi và đi khám ngay nếu có dấu hiệu bất thường."
+},
+
+{q:[
+"co bi phu muon sau dieu tri khong",
+"gamma knife co gay phu sau vai thang khong",
+"sau chieu tia co bi sung muon khong",
+"phu muon co thuong gap khong",
+"phu muon co nguy hiem khong",
+"phu muon co dieu tri duoc khong"
+],
+a:"Phù muộn có thể xuất hiện sau vài tuần đến vài tháng, tuy nhiên thường được kiểm soát tốt bằng điều trị phù hợp."
+},
+
+{q:[
+"co bi hoai tu tia sau dieu tri khong",
+"gamma knife co gay hoai tu khong",
+"sau chieu tia co bi ton thuong mo khong",
+"hoai tu tia co thuong gap khong",
+"hoai tu tia co nguy hiem khong",
+"co cach dieu tri hoai tu tia khong"
+],
+a:"Hoại tử tia là biến chứng hiếm, thường liên quan đến liều và vị trí điều trị."
+},
+
+{q:[
+"co bi viem mo nao sau dieu tri khong",
+"gamma knife co gay viem nao khong",
+"sau chieu tia co viem khong",
+"viem nao co thuong gap khong",
+"viem nao co dieu tri duoc khong",
+"viem nao co nguy hiem khong"
+],
+a:"Viêm mô não là rất hiếm và thường có thể kiểm soát được nếu phát hiện sớm."
+},
+
+{q:[
+"co bi tang kich thuoc ton thuong tam thoi khong",
+"sau dieu tri co thay khoi u to hon khong",
+"gamma knife co lam u to len khong",
+"tang kich thuoc tam thoi co thuong gap khong",
+"day co phai tien trien xau khong",
+"co can lo khi thay ton thuong to hon khong"
+],
+a:"Một số trường hợp có thể thấy tổn thương tăng kích thước tạm thời do phản ứng điều trị, không nhất thiết là xấu."
+},
+
+{q:[
+"co bi tai phat sau dieu tri khong",
+"gamma knife co tri dut diem khong",
+"sau chieu tia co bi tai phat khong",
+"tai phat co thuong gap khong",
+"can theo doi bao lau de phat hien tai phat",
+"tai phat co dieu tri lai duoc khong"
+],
+a:"Tái phát có thể xảy ra tùy bệnh lý, vì vậy cần theo dõi lâu dài theo hướng dẫn của bác sĩ."
+},
+
+{
+q:[
+"sau dieu tri bao lau moi thay hieu qua ro rang",
+"dap ung dieu tri cham la binh thuong hay bat thuong",
+"tai sao sau dieu tri chua thay ket qua som",
+"hieu qua sau chieu tia thuong xuat hien khi nao"
+],
+a:"Hiệu quả điều trị bằng Gamma Knife thường không xuất hiện ngay lập tức mà có thể cần vài tuần đến vài tháng. Đây là diễn tiến bình thường, vì tổn thương sẽ thay đổi dần theo thời gian dưới tác động của tia xạ. Bạn nên tái khám đúng hẹn để bác sĩ đánh giá chính xác đáp ứng điều trị."
+},
+
+{q:[
+"co bi anh huong chuc nang than kinh khong",
+"gamma knife co lam giam chuc nang nao khong",
+"sau chieu tia co bi roi loan than kinh khong",
+"anh huong than kinh co thuong gap khong",
+"co phuc hoi duoc khong",
+"can theo doi gi sau dieu tri"
+],
+a:"Ảnh hưởng chức năng thần kinh là hiếm và phụ thuộc vào vị trí điều trị, cần được theo dõi cẩn thận."
+},
+
+{q:[
+"co can nhap vien khi co bien chung khong",
+"sau dieu tri co phai nhap vien neu nang khong",
+"khi nao can vao vien sau gamma knife",
+"bien chung nao can nhap vien",
+"co can cap cuu khi co trieu chung nang khong",
+"nen lam gi khi co dau hieu bat thuong"
+],
+a:"Trong một số trường hợp có triệu chứng nặng, bạn có thể cần nhập viện để được theo dõi và xử trí kịp thời."
+},
+
+// PHẦN 7 — TÂM LÝ & QUYẾT ĐỊNH (261–300)
+
+{q:[
+"toi nen lo lang truoc dieu tri gamma knife khong",
+"tam ly lo lang truoc xa phau co binh thuong khong",
+"cam giac lo lang truoc dieu tri co dang lo khong",
+"lo lang truoc khi chieu tia nao xu ly the nao",
+"nguoi benh thuong co lo lang truoc dieu tri khong",
+"nen lam gi de giam lo lang truoc dieu tri"
+],
+a:"Cảm giác lo lắng trước điều trị là hoàn toàn bình thường. Bạn nên trao đổi trực tiếp với bác sĩ để được giải thích rõ ràng, từ đó giúp yên tâm hơn và chuẩn bị tâm lý tốt."
+},
+
+{q:[
+"ty le thanh cong gamma knife cao hay thap",
+"hieu qua dieu tri gamma knife dat muc nao",
+"ket qua dieu tri co tot neu chi dinh dung",
+"gamma knife thanh cong trong bao nhieu truong hop",
+"hieu qua phuong phap nay duoc danh gia ra sao",
+"ket qua dieu tri phu thuoc vao yeu to nao"
+],
+a:"Tỷ lệ thành công của Gamma Knife khá cao khi được chỉ định đúng. Hiệu quả phụ thuộc vào loại bệnh, kích thước tổn thương và tình trạng cụ thể của từng bệnh nhân."
+},
+
+{q:[
+"dieu tri gamma knife gay dau muc do nao",
+"cam giac khi chieu tia nao nhu the nao",
+"qua trinh dieu tri co gay dau hay kho chiu",
+"nguoi benh cam thay gi trong luc dieu tri",
+"xa phau gamma knife co gay dau khong",
+"muc do kho chiu trong dieu tri gamma knife"
+],
+a:"Trong quá trình điều trị Gamma Knife, bệnh nhân hầu như không cảm thấy đau. Một số cảm giác nhẹ có thể xuất hiện nhưng thường không đáng kể."
+},
+
+{q:[
+"muc do nguy hiem cua gamma knife nhu the nao",
+"dieu tri gamma knife co an toan hay khong",
+"nguy co bien chung cua gamma knife ra sao",
+"phuong phap nay co rui ro cao khong",
+"xa phau nao bang gamma knife co nguy hiem khong",
+"muc do an toan cua dieu tri duoc danh gia ra sao"
+],
+a:"Gamma Knife là phương pháp điều trị có độ an toàn cao với nguy cơ thấp. Tuy nhiên, vẫn cần được thực hiện tại cơ sở chuyên khoa và theo dõi đầy đủ."
+},
+
+{q:[
+"gamma knife co phai lua chon dieu tri phu hop",
+"phuong phap nay co dang de lua chon khong",
+"nen chon gamma knife trong truong hop nao",
+"gia tri dieu tri cua gamma knife duoc danh gia ra sao",
+"co nen chon xa phau gamma knife hay khong",
+"loi ich cua gamma knife so voi phuong phap khac"
+],
+a:"Gamma Knife thường là một lựa chọn tốt trong nhiều trường hợp phù hợp. Tuy nhiên, quyết định cuối cùng cần dựa trên đánh giá chuyên môn của bác sĩ."
+},
+
+{q:[
+"co nen tri hoan dieu tri gamma knife hay khong",
+"viec cham tre dieu tri co anh huong gi",
+"tri hoan dieu tri co lam tang nguy co khong",
+"nen dieu tri ngay hay cho them thoi gian",
+"thoi diem dieu tri anh huong ket qua ra sao",
+"tri hoan dieu tri co bat loi gi khong"
+],
+a:"Nếu đã có chỉ định điều trị, bạn không nên trì hoãn vì có thể ảnh hưởng đến kết quả và làm tăng nguy cơ tiến triển bệnh."
+},
+
+{q:[
+"nen phau thuat hay chon gamma knife",
+"lua chon giua mo nao va xa phau nhu the nao",
+"truong hop nao can phau thuat thay vi gamma knife",
+"so sanh giua mo nao va gamma knife",
+"quyet dinh dieu tri phu thuoc vao yeu to nao",
+"nen chon phuong phap nao de dieu tri"
+],
+a:"Việc lựa chọn giữa phẫu thuật và Gamma Knife phụ thuộc vào từng trường hợp cụ thể. Bác sĩ sẽ tư vấn phương án phù hợp nhất."
+},
+
+{q:[
+"co nen xin y kien thu hai truoc dieu tri",
+"tham khao y kien khac co can thiet khong",
+"hoi them bac si khac co loi ich gi",
+"khi nao nen tim them y kien chuyen gia",
+"co can tham van nhieu bac si khong",
+"y kien thu hai giup gi trong dieu tri"
+],
+a:"Việc tham khảo thêm ý kiến chuyên gia khác là điều nên làm nếu bạn còn băn khoăn, giúp bạn có quyết định tự tin hơn."
+},
+
+{q:[
+"nen dieu tri som khi duoc chi dinh hay khong",
+"dieu tri som co loi ich gi cho nguoi benh",
+"thoi diem dieu tri anh huong ket qua ra sao",
+"tri hoan dieu tri co lam giam hieu qua khong",
+"nen dieu tri ngay khi phat hien benh khong",
+"loi ich cua dieu tri som la gi"
+],
+a:"Điều trị sớm khi có chỉ định giúp kiểm soát bệnh tốt hơn và giảm nguy cơ biến chứng, do đó thường được khuyến khích."
+},
+
+{q:[
+"truong hop nao nen theo doi truoc dieu tri",
+"co nen theo doi thay vi dieu tri ngay",
+"theo doi benh co an toan hay khong",
+"khi nao chi can theo doi ma chua can dieu tri",
+"lua chon theo doi hay dieu tri phu thuoc gi",
+"bac si quyet dinh theo doi dua tren yeu to nao"
+],
+a:"Một số trường hợp có thể theo dõi trước khi điều trị, tuy nhiên cần được bác sĩ đánh giá kỹ lưỡng để đảm bảo an toàn."
+},
+
+{q:[
+"can chuan bi tam ly truoc dieu tri gamma knife nhu the nao",
+"hieu quy trinh dieu tri giup giam lo lang ra sao",
+"tam ly thoai mai giup dieu tri hieu qua hon khong",
+"nguoi benh nen chuan bi tinh than truoc dieu tri",
+"loi ich cua viec hieu ro quy trinh dieu tri",
+"lam gi de giu tam ly on dinh truoc dieu tri"
+],
+a:"Việc chuẩn bị tâm lý tốt trước điều trị là rất quan trọng. Khi hiểu rõ quy trình và được giải thích đầy đủ, bạn sẽ cảm thấy yên tâm hơn và hợp tác tốt trong quá trình điều trị."
+},
+
+{q:[
+"nguoi than ho tro trong dieu tri gamma knife nhu the nao",
+"di cung nguoi than giup gi cho nguoi benh",
+"co nen di dieu tri cung nguoi nha hay khong",
+"vai tro nguoi than trong qua trinh dieu tri",
+"nguoi nha ho tro truoc va sau dieu tri ra sao",
+"loi ich khi co nguoi than di cung dieu tri"
+],
+a:"Việc có người thân đi cùng sẽ giúp hỗ trợ bạn về tâm lý, thủ tục và chăm sóc sau điều trị, giúp quá trình diễn ra thuận lợi hơn."
+},
+
+{q:[
+"co nen nghi viec truoc va sau dieu tri hay khong",
+"thoi gian nghi viec sau gamma knife bao lau",
+"khi nao co the quay lai cong viec binh thuong",
+"anh huong dieu tri den cong viec hang ngay",
+"nguoi benh can nghi ngoi bao lau truoc khi lam viec",
+"lap ke hoach cong viec sau dieu tri nhu the nao"
+],
+a:"Bạn thường chỉ cần nghỉ ngắn hạn sau điều trị. Nếu sức khỏe ổn định, bạn có thể quay lại làm việc trong vòng vài ngày."
+},
+
+{q:[
+"tap the duc sau dieu tri gamma knife nhu the nao",
+"van dong sau dieu tri nen bat dau khi nao",
+"tap nhe sau dieu tri co loi ich gi",
+"nen tranh van dong manh trong bao lau",
+"ke hoach tap luyen sau dieu tri ra sao",
+"hoat dong the chat sau dieu tri can luu y gi"
+],
+a:"Bạn có thể bắt đầu vận động nhẹ sau vài ngày. Tuy nhiên nên tránh hoạt động mạnh trong giai đoạn đầu để đảm bảo an toàn."
+},
+
+{q:[
+"che do an uong sau dieu tri gamma knife nhu the nao",
+"an uong lanh manh giup hoi phuc ra sao",
+"nguoi benh nen an gi sau dieu tri",
+"co can kieng kem nghiem ngat sau dieu tri khong",
+"che do dinh duong ho tro hoi phuc nhu the nao",
+"an uong hop ly sau dieu tri co quan trong khong"
+],
+a:"Bạn không cần kiêng khem nghiêm ngặt, nhưng nên duy trì chế độ ăn uống lành mạnh và đầy đủ dinh dưỡng để hỗ trợ hồi phục."
+},
+
+{q:[
+"su dung thuoc bo sau dieu tri can luu y gi",
+"vitamin va thuc pham bo sung dung sau dieu tri ra sao",
+"co nen dung thuoc bo sau gamma knife hay khong",
+"tham khao bac si truoc khi dung thuoc bo tai sao",
+"thuoc bo co anh huong den dieu tri hay khong",
+"lua chon thuoc bo an toan sau dieu tri nhu the nao"
+],
+a:"Bạn có thể sử dụng thuốc bổ nếu cần, nhưng nên hỏi ý kiến bác sĩ trước để đảm bảo phù hợp và an toàn."
+},
+
+{q:[
+"tim hieu tai lieu ve gamma knife nen bat dau tu dau",
+"nguon thong tin y khoa dang tin cay la gi",
+"doc tai lieu giup hieu ro dieu tri ra sao",
+"lua chon tai lieu phu hop cho nguoi benh",
+"thong tin y khoa nao nen tham khao truoc dieu tri",
+"tranh thong tin sai lech trong y khoa nhu the nao"
+],
+a:"Bạn nên tìm hiểu từ các nguồn chính thống và đáng tin cậy để có thông tin chính xác về điều trị."
+},
+
+{q:[
+"tim thong tin tren mang ve dieu tri can luu y gi",
+"phan biet thong tin dung sai tren internet nhu the nao",
+"nguon thong tin truc tuyen nao dang tin cay",
+"tranh tin gia trong linh vuc y te bang cach nao",
+"tim hieu online co loi ich gi cho nguoi benh",
+"kiem chung thong tin y khoa tren mang ra sao"
+],
+a:"Bạn có thể tìm hiểu trên mạng, nhưng nên chọn nguồn chính thống và kiểm chứng lại với bác sĩ."
+},
+
+{q:[
+"kiem chung thong tin y khoa voi bac si tai sao quan trong",
+"tai sao khong nen tin hoan toan thong tin tren mang",
+"vai tro bac si trong viec giai dap thong tin",
+"so sanh thong tin online va tu van truc tiep",
+"cach danh gia do tin cay cua thong tin y khoa",
+"nguoi benh nen tham khao y kien ai de chinh xac"
+],
+a:"Thông tin trên mạng không phải lúc nào cũng chính xác. Bạn nên kiểm chứng lại với bác sĩ để đảm bảo an toàn."
+},
+
+{q:[
+"hoi truc tiep bac si giup gi cho nguoi benh",
+"tai sao nen trao doi truc tiep voi bac si dieu tri",
+"bac si la nguon thong tin chinh xac nhu the nao",
+"loi ich cua viec hoi bac si truoc dieu tri",
+"dat cau hoi truc tiep giup quyet dinh tot hon ra sao",
+"giao tiep voi bac si quan trong nhu the nao"
+],
+a:"Trao đổi trực tiếp với bác sĩ là cách tốt nhất để nhận được thông tin chính xác và phù hợp với tình trạng của bạn."
+},
+
+{q:[
+"ghi cau hoi truoc khi di kham giup ich gi",
+"tai sao nen chuan bi cau hoi truoc khi gap bac si",
+"viet san cau hoi giup trao doi hieu qua hon khong",
+"nguoi benh nen ghi chu gi truoc khi di kham",
+"chuan bi cau hoi giup tranh quen thong tin ra sao",
+"lap danh sach cau hoi truoc khi kham nhu the nao"
+],
+a:"Việc ghi sẵn câu hỏi trước khi đi khám sẽ giúp bạn không bỏ sót thông tin quan trọng và trao đổi hiệu quả hơn với bác sĩ."
+},
+
+{q:[
+"di kham cung nguoi than mang lai loi ich gi",
+"nguoi nha ho tro trong buoi kham nhu the nao",
+"vai tro nguoi than khi di kham benh",
+"tai sao nen co nguoi di cung khi kham benh",
+"nguoi than giup ghi nho thong tin dieu tri ra sao",
+"loi ich khi di kham cung nguoi nha la gi"
+],
+a:"Đi cùng người thân sẽ giúp bạn được hỗ trợ về tâm lý và ghi nhớ thông tin quan trọng trong quá trình tư vấn."
+},
+
+{q:[
+"nghi ngoi sau dieu tri can dieu do nhu the nao",
+"tai sao khong nen nam nghi qua nhieu sau dieu tri",
+"nghi ngoi hop ly giup hoi phuc ra sao",
+"nguoi benh nen can bang giua nghi ngoi va hoat dong",
+"lam the nao de nghi ngoi dung cach sau dieu tri",
+"nghi qua nhieu co anh huong gi den hoi phuc"
+],
+a:"Bạn nên nghỉ ngơi hợp lý sau điều trị, tránh làm việc quá sức nhưng cũng không cần nằm quá nhiều để cơ thể hồi phục tốt hơn."
+},
+
+{q:[
+"lo lang ve bien chung sau dieu tri nen xu ly the nao",
+"tam ly so bien chung co can thiet hay khong",
+"tai sao khong nen qua lo ve bien chung",
+"muc do bien chung sau gamma knife nhu the nao",
+"giam lo lang ve nguy co bien chung bang cach nao",
+"nhin nhan dung ve bien chung sau dieu tri"
+],
+a:"Bạn không cần quá lo lắng về biến chứng vì đa số trường hợp là hiếm và nhẹ. Tuy nhiên vẫn nên theo dõi và tái khám đúng hẹn."
+},
+
+{q:[
+"chuan bi tai chinh truoc dieu tri can luu y gi",
+"tai sao nen du tru chi phi dieu tri truoc",
+"lap ke hoach tai chinh cho dieu tri nhu the nao",
+"nguoi benh nen chuan bi kinh phi ra sao",
+"chi phi dieu tri phu thuoc vao nhung yeu to nao",
+"chuan bi tai chinh giup dieu tri thuan loi hon ra sao"
+],
+a:"Bạn nên chuẩn bị tài chính trước để chủ động trong quá trình điều trị và tránh gián đoạn không cần thiết."
+},
+
+{q:[
+"hoi ro chi phi dieu tri truoc khi bat dau tai sao",
+"can tim hieu gi ve chi phi dieu tri",
+"minh bach chi phi giup nguoi benh nhu the nao",
+"hoi chi phi truoc dieu tri mang lai loi ich gi",
+"cac khoan chi phi can duoc giai thich ro rang",
+"trao doi chi phi voi benh vien truoc dieu tri"
+],
+a:"Việc hỏi rõ chi phí trước điều trị sẽ giúp bạn chuẩn bị tốt hơn và tránh những phát sinh không mong muốn."
+},
+
+{q:[
+"bao hiem y te ho tro chi phi dieu tri nhu the nao",
+"tim hieu quyen loi bao hiem truoc dieu tri",
+"bao hiem giup giam chi phi ra sao",
+"can mang giay to bao hiem khi dieu tri",
+"hoi ro bao hiem giup tiet kiem chi phi nhu the nao",
+"ap dung bao hiem trong dieu tri gamma knife"
+],
+a:"Bạn nên tìm hiểu và hỏi rõ về bảo hiểm để biết quyền lợi hỗ trợ chi phí trong quá trình điều trị."
+},
+
+{q:[
+"lich tai kham sau dieu tri quan trong nhu the nao",
+"tai sao can tuan thu lich hen tai kham",
+"theo doi sau dieu tri giup danh gia ket qua ra sao",
+"bo qua tai kham anh huong den dieu tri the nao",
+"vai tro tai kham trong qua trinh dieu tri",
+"tuan thu lich hen giup phat hien van de som ra sao"
+],
+a:"Tái khám đúng hẹn giúp bác sĩ đánh giá hiệu quả điều trị và phát hiện sớm các vấn đề nếu có."
+},
+
+{q:[
+"chup mri sau dieu tri giup danh gia dieu gi",
+"tai sao can chup mri de theo doi ket qua",
+"mri giup kiem tra ton thuong sau dieu tri ra sao",
+"vai tro mri trong theo doi sau gamma knife",
+"bao lau nen chup mri lai sau dieu tri",
+"mri giup phat hien bat thuong som nhu the nao"
+],
+a:"Chụp MRI sau điều trị là phương pháp quan trọng giúp đánh giá đáp ứng và theo dõi tiến triển của tổn thương."
+},
+
+{q:[
+"su dung thuoc sau dieu tri can luu y nhung gi",
+"tai sao phai dung thuoc theo huong dan bac si",
+"tu y dung thuoc co anh huong gi den dieu tri",
+"thuoc sau dieu tri giup giam trieu chung ra sao",
+"nguoi benh can tuan thu don thuoc nhu the nao",
+"vai tro cua thuoc trong giai doan sau dieu tri"
+],
+a:"Bạn cần sử dụng thuốc đúng theo hướng dẫn của bác sĩ để đảm bảo hiệu quả và an toàn trong quá trình hồi phục."
+},
+
+{q:[
+"che do an uong sau dieu tri anh huong den hoi phuc ra sao",
+"an uong hop ly giup tang suc khoe nhu the nao",
+"nguoi benh nen duy tri dinh duong ra sao",
+"thuc don lanh manh sau dieu tri gom nhung gi",
+"an uong dung cach giup hoi phuc nhanh hon khong",
+"vai tro dinh duong trong dieu tri la gi"
+],
+a:"Chế độ ăn uống hợp lý giúp cơ thể hồi phục tốt hơn và duy trì sức khỏe lâu dài sau điều trị."
+},
+
+{q:[
+"sinh hoat hang ngay sau dieu tri can dieu chinh gi",
+"thoi quen sinh hoat giup hoi phuc nhanh hon",
+"nguoi benh nen sinh hoat nhu the nao sau dieu tri",
+"can bang giua nghi ngoi va hoat dong ra sao",
+"sinh hoat hop ly giup on dinh suc khoe the nao",
+"thay doi thoi quen sau dieu tri co can thiet khong"
+],
+a:"Sinh hoạt hợp lý, điều độ sẽ giúp bạn hồi phục nhanh hơn và ổn định sức khỏe sau điều trị."
+},
+
+{q:[
+"van dong sau dieu tri can chu y nhung gi",
+"tap luyen the chat sau dieu tri bat dau khi nao",
+"tranh hoat dong khong phu hop sau dieu tri ra sao",
+"muc do van dong an toan sau dieu tri la gi",
+"ke hoach van dong sau dieu tri nhu the nao",
+"van dong dung cach giup hoi phuc tot hon ra sao"
+],
+a:"Bạn nên lựa chọn mức độ vận động phù hợp và tăng dần theo tình trạng sức khỏe, tránh hoạt động quá sức ban đầu."
+},
+
+{q:[
+"lap ke hoach quay lai cong viec sau dieu tri nhu the nao",
+"bao lau co the tro lai cong viec binh thuong",
+"can dieu chinh cong viec sau dieu tri ra sao",
+"anh huong dieu tri den cong viec hang ngay",
+"nguoi benh nen quay lai lam viec khi nao",
+"can bang cong viec va suc khoe sau dieu tri"
+],
+a:"Bạn có thể quay lại công việc khi sức khỏe ổn định, thường sau vài ngày, và nên điều chỉnh phù hợp với thể trạng."
+},
+
+{q:[
+"hieu tien luong benh giup nguoi benh ra sao",
+"tai sao can biet tien trien benh sau dieu tri",
+"bac si danh gia tien luong dua tren yeu to nao",
+"tien luong benh giup lap ke hoach dieu tri ra sao",
+"nguoi benh nen hoi gi ve tien luong",
+"vai tro cua tien luong trong dieu tri"
+],
+a:"Hiểu rõ tiên lượng bệnh giúp bạn có kế hoạch theo dõi và điều trị phù hợp hơn trong dài hạn."
+},
+
+{q:[
+"nhan dien nguy co sau dieu tri can chu y gi",
+"tai sao can theo doi nguy co bien chung",
+"yeu to nao lam tang nguy co sau dieu tri",
+"theo doi nguy co giup phong ngua bien chung ra sao",
+"nguoi benh nen lam gi de giam nguy co",
+"quan ly nguy co sau dieu tri nhu the nao"
+],
+a:"Việc hiểu và theo dõi nguy cơ giúp bạn chủ động phòng ngừa và phát hiện sớm các vấn đề nếu xảy ra."
+},
+
+{q:[
+"so sanh cac phuong phap dieu tri giup lua chon ra sao",
+"tai sao nen tim hieu lua chon dieu tri khac",
+"lua chon dieu tri phu hop dua tren yeu to nao",
+"tham khao nhieu phuong an dieu tri co loi ich gi",
+"bac si tu van lua chon dieu tri nhu the nao",
+"nguoi benh nen can nhac gi khi lua chon dieu tri"
+],
+a:"Việc tìm hiểu các lựa chọn điều trị giúp bạn đưa ra quyết định phù hợp nhất với tình trạng bệnh và mong muốn cá nhân."
+},
+
+{q:[
+"tim hieu ve bac si dieu tri giup ich gi",
+"kinh nghiem bac si anh huong ket qua dieu tri ra sao",
+"tai sao nen biet ro doi ngu dieu tri",
+"lua chon bac si dua tren tieu chi nao",
+"vai tro bac si trong qua trinh dieu tri",
+"tin tuong bac si giup dieu tri hieu qua hon ra sao"
+],
+a:"Hiểu rõ về bác sĩ và đội ngũ điều trị sẽ giúp bạn yên tâm hơn và phối hợp tốt trong quá trình điều trị."
+},
+
+{q:[
+"kinh nghiem benh vien anh huong den dieu tri ra sao",
+"lua chon co so y te uy tin can dua tren gi",
+"tai sao nen tim hieu benh vien truoc dieu tri",
+"benh vien chuyen khoa giup dieu tri an toan hon",
+"yeu to danh gia mot benh vien tot la gi",
+"co so dieu tri anh huong ket qua nhu the nao"
+],
+a:"Lựa chọn bệnh viện có kinh nghiệm và chuyên môn cao sẽ giúp đảm bảo an toàn và nâng cao hiệu quả điều trị."
+},
+
+{q:[
+"lap ke hoach theo doi lau dai sau dieu tri nhu the nao",
+"tai sao can theo doi dai han sau gamma knife",
+"ke hoach dieu tri lau dai gom nhung gi",
+"nguoi benh nen duy tri theo doi trong bao lau",
+"theo doi lau dai giup phat hien tai phat ra sao",
+"quan ly suc khoe sau dieu tri trong thoi gian dai"
+],
+a:"Kế hoạch theo dõi dài hạn giúp kiểm soát bệnh tốt hơn, phát hiện sớm tái phát và đảm bảo hiệu quả điều trị lâu dài."
+},
+
+];
+
+// =======================
+// 🧠 ENGINE THÔNG MINH
+// =======================
+function reply(input){
+
+    let q = normalize(input);
+
+    // 🚨 kiểm tra nguy hiểm
+    for (let d of danger){
+        if(q.includes(d)){
+            return "⚠️ Dấu hiệu nguy hiểm! Hãy đến bệnh viện ngay.";
+        }
+    }
+
+    let best = null;
+    let maxScore = 0;
+
+    for (let item of faq){
+
+        let score = 0;
+
+        for (let kw of item.q){
+
+            if(q.includes(kw)) score += 3;
+
+            let words = kw.split(" ");
+            for (let w of words){
+                if(q.includes(w)) score++;
+            }
+        }
+
+        if(score > maxScore){
+            maxScore = score;
+            best = item;
+        }
+    }
+
+    if(best && maxScore > 0){
+        return best.a;
+    }
+
+    return "Bạn có thể hỏi:\n• Quy trình\n• Chuẩn bị\n• Sau điều trị\n• Biến chứng\n\n⚠️ Thông tin chỉ mang tính tham khảo.";
+}
+
+
+// =======================
+// UI
+// =======================
+function add(text, cls){
+    let div = document.createElement("div");
+    div.className = "msg " + cls;
+    div.innerText = text;
+    document.getElementById("messages").appendChild(div);
+    document.getElementById("messages").scrollTop = 9999;
+}
+
+function typing(on=true){
+    document.getElementById("typing").innerText = on ? "Đang trả lời..." : "";
+}
+
+function send(){
+    let q = document.getElementById("input").value;
+    if(!q) return;
+
+    add(q,"user");
+    document.getElementById("input").value="";
+
+    typing(true);
+
+    setTimeout(()=>{
+        typing(false);
+        add(reply(q) + "\n\n📞 Nếu có dấu hiệu bất thường, hãy đến bệnh viện.","bot");
+    },500);
+}
+
+function quickAsk(q){
+    document.getElementById("input").value = q;
+    send();
+}
+
+function resetChat(){
+    document.getElementById("messages").innerHTML="";
+}
+
+document.getElementById("input").addEventListener("keypress",function(e){
+    if(e.key==="Enter") send();
+});
+
+</script>
+
+</body>
+</html>
